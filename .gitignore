@@ -1,0 +1,17 @@
+# Data files (the data is downloaded with fetch_openml)
+*.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Experiment tracking
+mlruns/
+
+# macOS
+.DS_Store
