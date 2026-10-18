@@ -12,6 +12,7 @@ venv/
 
 # Experiment tracking
 mlruns/
+mlflow.db
 
 # macOS
 .DS_Store

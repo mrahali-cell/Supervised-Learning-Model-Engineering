@@ -2,3 +2,9 @@ pandas
 scikit-learn
 matplotlib
 ipykernel
+lightgbm
+optuna
+mlflow
+shap
+fairlearn
+imbalanced-learn
