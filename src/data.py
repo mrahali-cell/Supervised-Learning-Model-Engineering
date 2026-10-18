@@ -13,7 +13,7 @@ RANDOM_STATE = 42
 FEATURES = ["age", "workclass", "education-num", "marital-status",
             "occupation", "hours-per-week"]
 SENSITIVE = ["race", "sex", "native-country"]
-TARGET = "low_income"  # 1 = income <= $50K, 0 = income > $50K
+TARGET = "high_income"  # 1 = income > $50K (the rare class, ~24%), 0 = income <= $50K
 
 
 def load_raw():
@@ -52,15 +52,19 @@ def clean_adult(raw):
                           "capital-gain", "capital-loss"])
 
     # 6. Target as 0/1, and drop class so it can never be used as an input
-    df[TARGET] = (df["class"] == "<=50K").astype(int)
+    df[TARGET] = (df["class"] == ">50K").astype(int)
     df = df.drop(columns="class")
 
     return df
 
 
 def split(df):
-    """80% development / 20% test, stratified on the target."""
-    return train_test_split(df, test_size=0.2, stratify=df[TARGET],
+    """80% development / 20% test, stratified on the target.
+
+    Stratifies on the reverse of the target (the former low_income column) so the
+    rows in each part are exactly those of the split made before the target flip.
+    """
+    return train_test_split(df, test_size=0.2, stratify=1 - df[TARGET],
                             random_state=RANDOM_STATE)
 
 
@@ -77,5 +81,5 @@ def load_data():
 if __name__ == "__main__":
     dev_df, test_df = load_data()
     print("Development:", dev_df.shape, "| Test:", test_df.shape)
-    print("% low income, dev:", round(dev_df[TARGET].mean() * 100, 2),
+    print("% high income, dev:", round(dev_df[TARGET].mean() * 100, 2),
           "| test:", round(test_df[TARGET].mean() * 100, 2))

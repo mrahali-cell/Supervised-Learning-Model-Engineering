@@ -12,7 +12,7 @@ the top of your own script (e.g. `src/train.py`), and the imports do the work.
 | `load_data()` | function | Downloads the Adult dataset, cleans it (EDA decisions), splits it 80/20. Returns `dev_df, test_df` |
 | `get_cv()` | function | The 5-fold stratified cross-validation, to use for tuning and model comparison |
 | `FEATURES` | list of 6 column names | The model inputs: age, workclass, education-num, marital-status, occupation, hours-per-week |
-| `TARGET` | column name | `"low_income"`: 1 = income ≤ $50K, 0 = income > $50K |
+| `TARGET` | column name | `"high_income"`: 1 = income > $50K, 0 = income ≤ $50K |
 
     dev_df, test_df = load_data()
     X_train, y_train = dev_df[FEATURES], dev_df[TARGET]
@@ -58,7 +58,7 @@ yourself outside the Pipeline.**
 MSA-DATB09-04 — Supervised Learning & Model Engineering (Albert School, Fall 2026).
 
 Binary classification on the UCI Adult / Census Income dataset (1994 U.S. Census):
-predict whether a person's income is **≤ $50K** (`low_income = 1`) from a short
+predict whether a person's income is **> $50K** (`high_income = 1`) from a short
 profile (age, education, job, hours worked, marital status).
 
 ---
@@ -131,8 +131,22 @@ Expected output:
 
 ```
 Development: (39032, 10) | Test: (9758, 10)
-% low income, dev: 76.06 | test: 76.06
+% high income, dev: 23.94 | test: 23.94
 ```
+
+## How to run the model stages
+
+From the project root, in this order:
+
+```bash
+python -m src.train baseline        # default parameters, 5-fold CV
+python -m src.train tune --trials 25   # Optuna + MLflow, saves reports/best_params.json
+python -m src.evaluate calibration  # reliability diagrams, Brier, ECE, Platt / isotonic
+python -m src.fairness audit        # fairness by sex, one mitigation (development set)
+mlflow ui --backend-store-uri sqlite:///mlflow.db   # browse the logged runs
+```
+
+Findings so far are written in `docs/findings_log.md`.
 
 ## How to use the data in your script
 
@@ -152,14 +166,14 @@ cv = get_cv()   # 5-fold StratifiedKFold for model selection
 
 | Item | Decision |
 |---|---|
-| Target | `low_income`: 1 = income ≤ $50K, 0 = > $50K (≈ 76% / 24%) |
+| Target | `high_income`: 1 = income > $50K, 0 = ≤ $50K (≈ 24% / 76%) |
 | Model inputs (`FEATURES`) | `age`, `workclass`, `education-num`, `marital-status`, `occupation`, `hours-per-week` |
 | Kept aside for the fairness audit only (`SENSITIVE`) | `race`, `sex`, `native-country`: never model inputs |
 | Dropped | `education` (duplicate), `relationship` (sex proxy), `fnlwgt` (sampling weight), `capital-gain` / `capital-loss` (leakage, not available at prediction time) |
 | Split | 80% development / 20% test, stratified, `random_state=42` |
 | Cross-validation | 5-fold `StratifiedKFold` on the development set |
 | Missing values | Filled with `"Unknown"` **inside the Pipeline** |
-| Key metric | Recall on low earners (`low_income = 1`) |
+| Key metrics | ROC-AUC and PR-AUC (ranking); per-group selection rate, recall, FPR and precision (fairness audit, `sex`); Brier score and ECE (calibration) |
 
 ## Git workflow
 
