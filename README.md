@@ -1,3 +1,58 @@
+## For teammates: quick start
+
+You don't need to run `data.py` or `pipeline.py` first. You **import** them at
+the top of your own script (e.g. `src/train.py`), and the imports do the work.
+
+### Step 1: get the clean data and the split
+
+    from src.data import load_data, get_cv, FEATURES, TARGET
+
+| Imported | What it is | What it gives you |
+|---|---|---|
+| `load_data()` | function | Downloads the Adult dataset, cleans it (EDA decisions), splits it 80/20. Returns `dev_df, test_df` |
+| `get_cv()` | function | The 5-fold stratified cross-validation, to use for tuning and model comparison |
+| `FEATURES` | list of 6 column names | The model inputs: age, workclass, education-num, marital-status, occupation, hours-per-week |
+| `TARGET` | column name | `"low_income"`: 1 = income ≤ $50K, 0 = income > $50K |
+
+    dev_df, test_df = load_data()
+    X_train, y_train = dev_df[FEATURES], dev_df[TARGET]
+
+- `dev_df`: 80% of the data (39,032 rows), for training and cross-validation.
+- `test_df`: 20% (9,758 rows). **Do not touch it** until the final evaluation.
+- `X_train`: only the 6 input columns. `y_train`: only the answer (0/1).
+- Every call returns exactly the same split (`random_state=42`), for everyone.
+
+### Step 2: build the Pipeline with your model
+
+    from src.pipeline import build_pipeline
+
+    pipe = build_pipeline(YourModel())
+    pipe.fit(X_train, y_train)
+
+| Imported | What it is | What it gives you |
+|---|---|---|
+| `build_pipeline(model)` | function | A Pipeline: preprocessing → your model, as one object |
+
+The preprocessing inside the Pipeline:
+- numeric columns (age, education-num, hours-per-week): missing values → median, then scaling;
+- categorical columns (workclass, marital-status, occupation): missing values → "Unknown", then one-hot encoding.
+
+It is fitted on the training data only, and re-fitted automatically in each
+cross-validation fold, so there is no leakage. **Never preprocess the data
+yourself outside the Pipeline.**
+
+`YourModel()` is any scikit-learn classifier, for example
+`LogisticRegression(max_iter=1000)` or `RandomForestClassifier()`.
+
+### Notes
+- Feature engineering: not added yet (to be decided as a team). It will go
+  inside `build_pipeline()`, so the code above won't need to change.
+- `SENSITIVE` (`race`, `sex`, `native-country`) can also be imported from
+  `src.data`: these columns are **not** model inputs, they are only used for
+  the fairness audit.
+- To see what the data looks like: `notebooks/01_eda.ipynb`
+  (Steps 1–8 = raw data and decisions, Step 9 = data after preprocessing).
+
 # Supervised-Learning-Model-Engineering
 
 MSA-DATB09-04 — Supervised Learning & Model Engineering (Albert School, Fall 2026).
