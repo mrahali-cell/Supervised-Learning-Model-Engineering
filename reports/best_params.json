@@ -1,0 +1,25 @@
+{
+  "Logistic Regression": {
+    "C": 5.176564814928184,
+    "penalty": "l2",
+    "class_weight": null
+  },
+  "Random Forest": {
+    "n_estimators": 300,
+    "max_depth": 15,
+    "min_samples_leaf": 10,
+    "max_features": "log2",
+    "class_weight": "balanced_subsample"
+  },
+  "LightGBM": {
+    "n_estimators": 350,
+    "learning_rate": 0.01636353356838844,
+    "num_leaves": 27,
+    "min_child_samples": 36,
+    "subsample": 0.6858288808030989,
+    "colsample_bytree": 0.9243288610107918,
+    "reg_alpha": 0.0008248101443310095,
+    "reg_lambda": 0.012402271701031737,
+    "scale_pos_weight": 1.315513460772054
+  }
+}
