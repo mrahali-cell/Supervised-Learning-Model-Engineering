@@ -22,7 +22,7 @@ analysis, to show that the definitions pull in different directions. The
 ThresholdOptimizer is fitted on out-of-fold predictions and scored by a second
 cross-validation, so it is never scored on the rows it was fitted on.
 
-Run from the project root, after `python -m src.train tune`:
+Run from the project root (uses the tuned parameters in src/config.BEST_PARAMS):
     python -m src.fairness audit
 """
 
@@ -46,8 +46,9 @@ from sklearn.model_selection import StratifiedKFold
 from src.data import FEATURES, RANDOM_STATE, TARGET, get_cv, load_data
 from src.evaluate import COLORS, FIGURES_DIR, calibrate_out_of_fold
 from src.pipeline import build_pipeline
-from src.train import (EXPERIMENT, REPORTS_DIR, TRACKING_URI, best_f1_point,
-                       build_model, cross_validate_pipeline)
+from src.config import BEST_PARAMS, EXPERIMENT, REPORTS_DIR, TRACKING_URI
+from src.cv import best_f1_point, cross_validate_pipeline
+from src.models import build_model
 
 CANDIDATE = "LightGBM"
 SMALL_GROUP = 500  # below this many people, group metrics are unstable (EDA Step 8)
@@ -178,7 +179,7 @@ def run_audit():
     dev_df, _ = load_data()  # the test set is left untouched
     X, y = dev_df[FEATURES], dev_df[TARGET].to_numpy()
     sex, race = dev_df["sex"].to_numpy(), dev_df["race"].to_numpy()
-    best_params = json.loads((REPORTS_DIR / "best_params.json").read_text())
+    best_params = json.loads(BEST_PARAMS.read_text())
 
     print(f"Out-of-fold predictions: {CANDIDATE} (tuned) + Platt scaling", flush=True)
     pipe = build_pipeline(build_model(CANDIDATE, best_params[CANDIDATE]))

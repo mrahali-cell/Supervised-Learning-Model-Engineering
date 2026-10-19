@@ -5,7 +5,7 @@ Working notes for the final report (about 10 pages) and the oral defense
 (7 min + 3 min Q&A). Last updated 2026-10-18 (after the fairness audit).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
-baseline run (`python -m src.train`, 5-fold CV on the development set, test set
+baseline run (`python -m tuning.baseline`, 5-fold CV on the development set, test set
 untouched). Items marked **PROVISIONAL** must be re-checked before use.
 
 To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
@@ -235,10 +235,10 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   (one per model) and 75 nested trial runs (25 each). Each trial logs its
   hyperparameters, CV metrics and a per-fold metrics file; each parent logs the
   best parameters and the optimisation-history figure.
-- **Evidence:** `python -m src.train tune`; browse with
+- **Evidence:** `python -m tuning.tune` (formerly `src/train.py`); browse with
   `mlflow ui --backend-store-uri sqlite:///mlflow.db`. Runs are stored in
   `mlflow.db` and `mlruns/` (both git-ignored); best parameters are in
-  `reports/best_params.json`.
+  `tuning/results/v1/best_params.json`.
 - **Course link:** project requirement 7 (experiment tracking).
 - **Use in:** R tracking (take screenshots). S backup.
 
@@ -378,6 +378,23 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   40 h 21.6% vs 44.1%.
 - **Course link:** S8 slices; S9 historical bias and base rates.
 - **Use in:** R EDA + fairness (why the gap exists in the data). S backup.
+
+### F32 · Random forest diagnosis: overfitting is solved, the data sets the ceiling
+- **Finding:** a fully grown tree memorises the training data; limiting tree
+  growth is what fixes it. Once the leaves hold at least 5 people the
+  train-validation gap is small, and tuning v1 adds nothing measurable. Its
+  class weights made the probabilities worse without changing the ranking.
+- **Evidence:** `python -m tuning.random_forest baseline`, 5-fold CV, saved in
+  `tuning/results/random_forest/baseline.csv`. Train / validation PR-AUC (gap):
+  one fully grown tree 0.977 / 0.444 (0.53); RF sklearn defaults 0.972 / 0.639
+  (0.33); RF baseline, min_samples_leaf 5, 0.803 / 0.711 (0.09); RF tuned v1
+  0.749 / 0.715 ± 0.013 (0.035). Validation Brier: baseline 0.111, tuned v1 0.136
+  (`class_weight="balanced_subsample"`); ROC-AUC 0.890 vs 0.891. Confirms F19
+  and isolates the cause of F20/F22 for the random forest.
+- **Next:** validation curves for every course hyperparameter
+  (`python -m tuning.random_forest curves`), then the tuning v2 search space.
+- **Course link:** S5 bias/variance, train vs validation gap; S7 calibration.
+- **Use in:** R tuning (random forest). S results slide.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
@@ -559,10 +576,13 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | EDA notebook aligned with the audit case: new Steps 4d (groups, proxies), 5 (framing), 7b (group sizes) and 8 (bias sources, hand-over); target shown as `high_income` | Soumaya with Claude, 2026-10-19 | Done in `notebooks/01_eda.ipynb` (re-executed), uncommitted. Based on the earlier 29-cell version restored on `soumaya/dev`; the Step 9 preview of the newer version is not in it |
 | Fairness protocol: sex as the audited attribute; equalized odds primary and four-fifths rule as legal screen (fixed before the results); one mitigation, `ThresholdOptimizer`, cross-fitted on out-of-fold scores; race only audited | Soumaya with Claude | Done on the development set in `src/fairness.py` (`python -m src.fairness audit`), uncommitted; test-set evaluation pending |
 | Candidate final model: LightGBM + Platt scaling | Proposed by Claude from F19-F24 | Provisional: confirm after the fairness audit and the single test-set evaluation |
-| Tuning protocol: Optuna (TPE, seed 42), 25 trials per model, objective = mean 5-fold CV PR-AUC; class weighting is a tuned hyperparameter; MLflow logging in a SQLite file | Soumaya with Claude | Done in `src/train.py` (`python -m src.train tune`), uncommitted |
+| Tuning protocol: Optuna (TPE, seed 42), 25 trials per model, objective = mean 5-fold CV PR-AUC; class weighting is a tuned hyperparameter; MLflow logging in a SQLite file | Soumaya with Claude | Done (first in `src/train.py`, now `tuning/tune.py`); results in `tuning/results/v1/` |
 | Engineered features: is_married, has_degree, part_time, overtime, age_squared | Soumaya with Claude, 2026-10-18 | Uncommitted on the local checkout |
 | Cutoff: best-F1 point for the neutral comparison; clients choose their own | Proposed | Open: confirm with the team |
 | Fairness definition: equalized odds as primary, four-fifths rule as legal screen | Proposed | Open: confirm before looking at fairness results |
+| Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
+| Random forest diagnosis and tuning v2 | Manel | In progress: `tuning/random_forest.py`, `notebooks/03_random_forest.ipynb` |
+| Logistic regression diagnosis and tuning v2 | Soumaya | To do: same pattern as `tuning/random_forest.py` |
 
 ---
 

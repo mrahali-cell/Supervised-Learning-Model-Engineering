@@ -1,7 +1,7 @@
 ## For teammates: quick start
 
 You don't need to run `data.py` or `pipeline.py` first. You **import** them at
-the top of your own script (e.g. `src/train.py`), and the imports do the work.
+the top of your own script (e.g. a script in `tuning/`), and the imports do the work.
 
 ### Step 1: get the clean data and the split
 
@@ -45,8 +45,8 @@ yourself outside the Pipeline.**
 `LogisticRegression(max_iter=1000)` or `RandomForestClassifier()`.
 
 ### Notes
-- Feature engineering: not added yet (to be decided as a team). It will go
-  inside `build_pipeline()`, so the code above won't need to change.
+- Feature engineering: inside `build_pipeline()` (`engineered=True` by default):
+  `is_married`, `has_degree`, `part_time`, `overtime`, `age_squared`.
 - `SENSITIVE` (`race`, `sex`, `native-country`) can also be imported from
   `src.data`: these columns are **not** model inputs, they are only used for
   the fairness audit.
@@ -66,23 +66,36 @@ profile (age, education, job, hours worked, marital status).
 ## Architecture
 
 ```
-notebooks/
+src/                  LIBRARY: imported by everything else, never trains a model by itself
+    config.py           paths and settings (results folders, which tuned version is used, MLflow)
+    data.py             load → clean → split (the result of the EDA)
+    pipeline.py         feature engineering + preprocessing + model Pipeline  (reqs 2, 3, 5)
+    models.py           the models: defaults (baseline) and build_model(name, params)  (req 4)
+    cv.py               cross-validation helpers: out-of-fold scores, train vs validation
+    evaluate.py         calibration (later: test-set metrics, SHAP)               (reqs 8, 9)
+    fairness.py         fairness audit and mitigation                             (req 10)
+tuning/               ALL model training and hyperparameter tuning: scripts you run
+    baseline.py         stage 1: the model progression with default parameters   (req 4)
+    random_forest.py    RF diagnosis: baseline + validation curves (Manel)
+    tune.py             stage 2: Optuna + MLflow, one search space per model     (reqs 6, 7)
+    results/
+        v1/best_params.json       first Optuna run (Soumaya), = git tag `baseline-v1`
+        v2/best_params.json       tuning after the diagnosis (created by tune.py)
+        random_forest/            RF diagnosis results (baseline.csv, curves.csv, curves/*.png)
+notebooks/            EXPLAIN: read the results files and comment them, no training
     01_eda.ipynb                  EDA: exploration, findings and every decision (the "why")
-    02_logistic_regression.ipynb  diagnosis (over/underfitting) and tuning, one model per notebook
+    02_logistic_regression.ipynb  one notebook per model: baseline, diagnosis, curves, tuning
     03_random_forest.ipynb
     04_lightgbm.ipynb
-reports/
-    best_params.json  tuning v1 = the baseline (also frozen by the git tag `baseline-v1`)
-    tuning_v2/        results of the tuning after the diagnosis
-src/
-    data.py           load → clean → split (the result of the EDA)
-    pipeline.py       preprocessing + model Pipeline          (reqs 2, 3, 5)
-    train.py          training, Optuna tuning, MLflow tracking (reqs 4, 6, 7)
-    evaluate.py       test-set metrics, calibration, SHAP      (reqs 8, 9)
-    fairness.py       fairness audit and mitigation            (req 10)
+reports/              calibration and fairness outputs (json + figures)
+docs/findings_log.md  the log of every finding and decision (for the report and the oral)
 requirements.txt      Python libraries needed
-.gitignore            files Git ignores (*.csv, caches, mlruns…)
+.gitignore            files Git ignores (data *.csv, caches, mlruns…)
 ```
+
+**Who does what:** `src/` = the tools, `tuning/` = the experiments (scripts),
+`tuning/results/` = their numbers, `notebooks/` = the explanations,
+`docs/findings_log.md` = the written log.
 
 ### How the pieces fit together
 
@@ -96,7 +109,7 @@ requirements.txt      Python libraries needed
                  dev_df (80%)            test_df (20%)
                      │                        │
                      ▼                        │  untouched until the end
-        src/pipeline.py + src/train.py        │
+        src/pipeline.py + tuning/ scripts     │
         impute → encode → scale → model       │
         fitted on dev_df only,                │
         5-fold CV for tuning (get_cv())       │
@@ -145,12 +158,18 @@ Development: (39032, 10) | Test: (9758, 10)
 From the project root, in this order:
 
 ```bash
-python -m src.train baseline        # default parameters, 5-fold CV
-python -m src.train tune --trials 25   # Optuna + MLflow, saves reports/best_params.json
-python -m src.evaluate calibration  # reliability diagrams, Brier, ECE, Platt / isotonic
-python -m src.fairness audit        # fairness by sex, one mitigation (development set)
-mlflow ui --backend-store-uri sqlite:///mlflow.db   # browse the logged runs
+python -m tuning.baseline                              # stage 1: default parameters, 5-fold CV
+python -m tuning.random_forest baseline                # RF diagnosis: where do we start?
+python -m tuning.random_forest curves                  # RF validation curves (one per hyperparameter)
+python -m tuning.tune --version v2 --model rf          # stage 2: Optuna + MLflow (lr, rf or lgbm)
+python -m src.evaluate calibration                     # reliability diagrams, Brier, ECE, Platt / isotonic
+python -m src.fairness audit                           # fairness by sex, one mitigation (development set)
+mlflow ui --backend-store-uri sqlite:///mlflow.db      # browse the logged runs
 ```
+
+`src/evaluate.py` and `src/fairness.py` use the tuned parameters of the
+version set in `src/config.py` (`BEST_PARAMS_VERSION`, currently `v1`). Switch it
+to `v2` once tuning v2 is done.
 
 Findings so far are written in `docs/findings_log.md`.
 

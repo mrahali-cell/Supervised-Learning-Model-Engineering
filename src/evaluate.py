@@ -13,7 +13,7 @@ probabilities of the three tuned models?
   cross-validation on the out-of-fold predictions, so a calibrator is never scored
   on the rows it was fitted on (S7: calibrate on predictions unseen by the base model).
 
-Run from the project root, after `python -m src.train tune`:
+Run from the project root (uses the tuned parameters in src/config.BEST_PARAMS):
     python -m src.evaluate calibration
 """
 
@@ -34,8 +34,9 @@ from sklearn.model_selection import StratifiedKFold
 
 from src.data import FEATURES, RANDOM_STATE, TARGET, get_cv, load_data
 from src.pipeline import build_pipeline
-from src.train import (EXPERIMENT, REPORTS_DIR, TRACKING_URI, TUNED_MODELS,
-                       build_model, cross_validate_pipeline)
+from src.config import BEST_PARAMS, EXPERIMENT, REPORTS_DIR, TRACKING_URI
+from src.cv import cross_validate_pipeline
+from src.models import TUNED_MODELS, build_model
 
 N_BINS = 10
 FIGURES_DIR = REPORTS_DIR / "figures"
@@ -140,7 +141,7 @@ def run_calibration():
     dev_df, _ = load_data()  # the test set is left untouched
     X, y = dev_df[FEATURES], dev_df[TARGET].to_numpy()
     sex = dev_df["sex"].to_numpy()
-    best_params = json.loads((REPORTS_DIR / "best_params.json").read_text())
+    best_params = json.loads(BEST_PARAMS.read_text())
     cv = get_cv()
 
     preds, rows = {}, []

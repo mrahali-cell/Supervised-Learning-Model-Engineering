@@ -16,3 +16,6 @@ mlflow.db
 
 # macOS
 .DS_Store
+
+# Tuning results are small and part of the deliverable: keep them
+!tuning/results/**/*.csv
