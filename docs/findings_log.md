@@ -131,11 +131,14 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S1 and S5 honest evaluation.
 - **Use in:** R protocol. S protocol slide.
 
-### F11 · Split: group sizes for the fairness audit (PROVISIONAL, TO CHECK)
-- **Finding:** the split is stratified on the target only, not on sex or race,
-  so small groups may have too few test rows for the fairness audit.
-- **Evidence:** race groups in the full data: Amer-Indian-Eskimo 470 and Other
-  406 people (about 1% and 0.8%).
+### F11 · Split: group sizes for the fairness audit (checked in EDA Step 7b)
+- **Finding:** the split is stratified on the target only, not on sex or race.
+  Sex groups are large enough in both parts. Two race groups are too small to
+  audit; the others are usable with wide margins. No restratification needed.
+- **Evidence:** high earners in the test set: 356 women and 1,980 men (a rate
+  such as recall carries about ±5 points for women). Test-set race groups:
+  Amer-Indian-Eskimo 87 and Other 80 people (too small), Asian-Pac-Islander 311,
+  Black 899, White 8,381.
 - **Course link:** S8 slice size and uncertainty.
 - **Use in:** R limitations.
 
@@ -353,6 +356,29 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   the fitted thresholds use has not been measured yet.
 - **Use in:** R fairness (discussion, limits of use). S Q&A.
 
+### F30 · EDA: the model inputs are proxies for sex
+- **Finding:** marital status, occupation and hours worked differ so much
+  between women and men that a model can rebuild much of `sex` from them, even
+  though `sex` is not an input. Leaving a protected column out does not make a
+  model blind to it, so fairness has to be measured on the outputs, by group.
+- **Evidence:** EDA Step 4d. Married-civ-spouse 60.9% of men vs 15.3% of women;
+  Adm-clerical 25.3% of women vs 5.9% of men; Craft-repair 2.2% vs 18.6%;
+  average hours 36.4 (women) vs 42.4 (men).
+- **Course link:** S9 proxy variables ("fairness through unawareness").
+- **Use in:** R fairness + EDA. S fairness slide.
+
+### F31 · EDA: where the income gap between women and men comes from
+- **Finding:** much of the overall gap (30.4% vs 10.9% earning > $50K) comes
+  from who is married: among married people the rates are equal. Among unmarried
+  people, and within education and hours groups, a gap remains. These are
+  descriptive associations, not causes.
+- **Evidence:** EDA Step 4d, % earning > $50K, women vs men: married 44.8% vs
+  44.6%; not married 4.8% vs 8.2%; bachelor or more 26.3% vs 57.1%; below
+  bachelor 6.6% vs 20.9%; under 35 h 6.2% vs 7.7%; 35-40 h 10.2% vs 26.2%; over
+  40 h 21.6% vs 44.1%.
+- **Course link:** S8 slices; S9 historical bias and base rates.
+- **Use in:** R EDA + fairness (why the gap exists in the data). S backup.
+
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
   but finds fewer of the high earners. With no single costly error in this case,
@@ -530,6 +556,7 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | 6 model inputs; sex, race, native-country excluded; capital-gain/loss, fnlwgt, education, relationship dropped | Manel (EDA) | In the code; team confirmation pending |
 | 80/20 stratified split, `random_state=42`, 5-fold stratified CV | Manel (`src/data.py`) | In the code, merged in main |
 | Calibration protocol: out-of-fold predictions on the development set, Platt and isotonic scored by a second 5-fold CV, reliability by sex; test set not used | Soumaya with Claude | Done in `src/evaluate.py` (`python -m src.evaluate calibration`), uncommitted |
+| EDA notebook aligned with the audit case: new Steps 4d (groups, proxies), 5 (framing), 7b (group sizes) and 8 (bias sources, hand-over); target shown as `high_income` | Soumaya with Claude, 2026-10-19 | Done in `notebooks/01_eda.ipynb` (re-executed), uncommitted. Based on the earlier 29-cell version restored on `soumaya/dev`; the Step 9 preview of the newer version is not in it |
 | Fairness protocol: sex as the audited attribute; equalized odds primary and four-fifths rule as legal screen (fixed before the results); one mitigation, `ThresholdOptimizer`, cross-fitted on out-of-fold scores; race only audited | Soumaya with Claude | Done on the development set in `src/fairness.py` (`python -m src.fairness audit`), uncommitted; test-set evaluation pending |
 | Candidate final model: LightGBM + Platt scaling | Proposed by Claude from F19-F24 | Provisional: confirm after the fairness audit and the single test-set evaluation |
 | Tuning protocol: Optuna (TPE, seed 42), 25 trials per model, objective = mean 5-fold CV PR-AUC; class weighting is a tuned hyperparameter; MLflow logging in a SQLite file | Soumaya with Claude | Done in `src/train.py` (`python -m src.train tune`), uncommitted |
@@ -548,9 +575,9 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
       new one.
 - [ ] Which cutoff do we show in the report (best F1 or a client-driven choice)
       and how do we justify it?
-- [ ] Are the sex and race groups big enough in the test set for a stable
-      fairness audit? If not, restratify on target x sex (this changes the
-      shared split).
+- [x] Are the sex and race groups big enough in the test set for a stable
+      fairness audit? Sex: yes. Race: two groups (87 and 80 people) are too
+      small, so race is audited descriptively for them (F11).
 - [ ] The tuned models do NOT separate (gaps of 0.004-0.011 PR-AUC vs a fold
       standard deviation of 0.013). How do we choose the final model? Options:
       paired comparison across folds, nested CV (S5), and secondary criteria
