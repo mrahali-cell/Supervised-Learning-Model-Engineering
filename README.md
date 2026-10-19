@@ -67,7 +67,13 @@ profile (age, education, job, hours worked, marital status).
 
 ```
 notebooks/
-    01_eda.ipynb      EDA: exploration, findings and every decision (the "why")
+    01_eda.ipynb                  EDA: exploration, findings and every decision (the "why")
+    02_logistic_regression.ipynb  diagnosis (over/underfitting) and tuning, one model per notebook
+    03_random_forest.ipynb
+    04_lightgbm.ipynb
+reports/
+    best_params.json  tuning v1 = the baseline (also frozen by the git tag `baseline-v1`)
+    tuning_v2/        results of the tuning after the diagnosis
 src/
     data.py           load → clean → split (the result of the EDA)
     pipeline.py       preprocessing + model Pipeline          (reqs 2, 3, 5)
