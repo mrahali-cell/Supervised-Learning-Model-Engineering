@@ -1,0 +1,72 @@
+[
+  {
+    "rule":"single threshold (best F1)",
+    "accuracy":0.8174318508,
+    "balanced_accuracy":0.805593616,
+    "f1":0.6724882802,
+    "precision":0.5893820994,
+    "recall":0.7828785447,
+    "dp_diff":-0.2993265075,
+    "tpr_diff":-0.191109837,
+    "fpr_diff":-0.188918553,
+    "ppv_diff":-0.0145734838,
+    "four_fifths_ratio":0.2823253999,
+    "equalized_odds_gap":0.191109837
+  },
+  {
+    "rule":"single threshold (best balanced accuracy)",
+    "accuracy":0.7866109859,
+    "balanced_accuracy":0.8114356793,
+    "f1":0.6584375641,
+    "precision":0.5337765957,
+    "recall":0.8590690209,
+    "dp_diff":-0.3271387442,
+    "tpr_diff":-0.1432981832,
+    "fpr_diff":-0.2283845691,
+    "ppv_diff":-0.057319357,
+    "four_fifths_ratio":0.3372204574,
+    "equalized_odds_gap":0.2283845691
+  },
+  {
+    "rule":"equalized odds (ThresholdOptimizer)",
+    "accuracy":0.7595306415,
+    "balanced_accuracy":0.7821213563,
+    "f1":0.6217457887,
+    "precision":0.4986747689,
+    "recall":0.8254681648,
+    "dp_diff":-0.1114527752,
+    "tpr_diff":0.0055142276,
+    "fpr_diff":-0.0031418286,
+    "ppv_diff":-0.2959418487,
+    "four_fifths_ratio":0.7427217163,
+    "equalized_odds_gap":0.0055142276
+  },
+  {
+    "rule":"equal opportunity (ThresholdOptimizer)",
+    "accuracy":0.7868928059,
+    "balanced_accuracy":0.8039218922,
+    "f1":0.6527511063,
+    "precision":0.5351495653,
+    "recall":0.8365971108,
+    "dp_diff":-0.2128602696,
+    "tpr_diff":-0.0009269341,
+    "fpr_diff":-0.1160329247,
+    "ppv_diff":-0.1771415996,
+    "four_fifths_ratio":0.5213668039,
+    "equalized_odds_gap":0.1160329247
+  },
+  {
+    "rule":"demographic parity (ThresholdOptimizer)",
+    "accuracy":0.7646034023,
+    "balanced_accuracy":0.7698014074,
+    "f1":0.6133322111,
+    "precision":0.5054449608,
+    "recall":0.7797752809,
+    "dp_diff":0.0005704931,
+    "tpr_diff":0.1794119442,
+    "fpr_diff":0.098786148,
+    "ppv_diff":-0.3434766014,
+    "four_fifths_ratio":1.0015453198,
+    "equalized_odds_gap":0.1794119442
+  }
+]

@@ -14,15 +14,43 @@ Run `python3 -m src.pipeline` from the project root for a quick check.
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 # The 6 model inputs (src.data.FEATURES), split by semantic type (EDA Step 3)
 NUMERIC = ["age", "education-num", "hours-per-week"]
 CATEGORICAL = ["workclass", "marital-status", "occupation"]
 
+# Engineered features (requirement 2), created by add_features() below
+ENGINEERED_NUMERIC = ["age_squared"]
+ENGINEERED_BINARY = ["is_married", "has_degree", "part_time", "overtime"]
 
-def build_preprocessor():
-    """ColumnTransformer: a different preprocessing chain per column type."""
+
+def add_features(X):
+    """Create the engineered features from the 6 model inputs.
+
+    Fixed rules only (no value is learned from the data), so it is leakage-safe.
+    Each feature is justified by a pattern in the development set (% earning <= $50K):
+    - is_married : married-civ-spouse 55.5% vs 93.6% for everyone else;
+    - has_degree : education-num >= 13 (bachelor+) 52.0% vs 83.9%;
+    - part_time / overtime : < 35 h about 93%, 40 h 79%, > 40 h 56-65%.
+      The EDA medians were both 40, but the rate changes by hours regime;
+    - age_squared : U-shape, 98.9% (<= 24) -> 60.6% (45-54) -> 79.6% (65+),
+      which a linear model cannot capture from `age` alone.
+    """
+    X = X.copy()
+    X["is_married"] = (X["marital-status"] == "Married-civ-spouse").astype(int)
+    X["has_degree"] = (X["education-num"] >= 13).astype(int)
+    X["part_time"] = (X["hours-per-week"] < 35).astype(int)
+    X["overtime"] = (X["hours-per-week"] > 40).astype(int)
+    X["age_squared"] = X["age"] ** 2
+    return X
+
+
+def build_preprocessor(engineered=False):
+    """ColumnTransformer: a different preprocessing chain per column type.
+
+    engineered=True expects the extra columns made by add_features().
+    """
     numeric = Pipeline([
         ("impute", SimpleImputer(strategy="median")),
         ("scale", StandardScaler()),
@@ -32,23 +60,28 @@ def build_preprocessor():
         # handle_unknown="ignore": a category never seen in training does not crash
         ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
     ])
-    return ColumnTransformer([
-        ("num", numeric, NUMERIC),
+    transformers = [
+        ("num", numeric, NUMERIC + (ENGINEERED_NUMERIC if engineered else [])),
         ("cat", categorical, CATEGORICAL),
-    ])
+    ]
+    if engineered:
+        transformers.append(("bin", "passthrough", ENGINEERED_BINARY))
+    return ColumnTransformer(transformers)
 
 
-def build_pipeline(model):
-    """Full Pipeline for the team: preprocessing -> the model they choose.
+def build_pipeline(model, engineered=True):
+    """Full Pipeline for the team: features -> preprocessing -> the model.
 
     Example (in train.py):
         pipe = build_pipeline(SomeClassifier())
-    TODO (team): add the feature engineering step here, before "preprocess".
+    engineered=False gives the preprocessing only (to measure what the
+    engineered features bring).
     """
-    return Pipeline([
-        ("preprocess", build_preprocessor()),
-        ("model", model),
-    ])
+    steps = []
+    if engineered:
+        steps.append(("features", FunctionTransformer(add_features)))
+    steps += [("preprocess", build_preprocessor(engineered)), ("model", model)]
+    return Pipeline(steps)
 
 
 if __name__ == "__main__":
