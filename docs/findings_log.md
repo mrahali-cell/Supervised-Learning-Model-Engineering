@@ -518,6 +518,41 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   random / TPE search, S6-S7 class weights cost calibration.
 - **Use in:** R tuning (random forest). S tuning slide.
 
+### F37 · Logistic regression diagnosis: no overfitting, a little bias; C hardly matters
+- **Finding:** no overfitting (gap 0.001) but a little bias: being linear costs
+  about 0.01 PR-AUC vs the random forest and LightGBM. Regularization can only
+  add bias: C is flat from 0.3 to 100 (L1 = L2), Elastic Net never beats L2,
+  class weights only hurt the Brier score. Only new information helps: married
+  × hours passes the rule fixed in advance (+0.0016, better in 5 of 5 folds).
+- **Evidence:** `python3 -m tuning.logistic_regression baseline | curves |
+  lasso | interactions | search`, 5-fold CV, results in
+  `tuning/results/logistic_regression/`, explained in
+  `notebooks/02_logistic_regression.ipynb`. Train / validation PR-AUC: default
+  C = 1 0.7096 / 0.7082; tuned v1 (C = 5.18, L2) 0.7097 / 0.7083 ± 0.013 (gap
+  0.0014), Brier 0.111; 6 inputs only 0.688. C curves: 0.7083 for C = 1-100 (L1
+  and L2); at C = 0.01, 0.698 (L2) and 0.682 (L1); L1 at C = 0.0001 = Dummy
+  (0.239). Lasso keeps 31 of 37 columns at C = 1 (at 0 in all folds:
+  occupation Never-worked, 8 people, and `workclass_Unknown`, an exact copy of
+  `occupation_Unknown`) and 6 at C = 0.001 (education, age, hours, marital
+  status). Elastic Net (l1_ratio 0-1, saga): 0.7083 for every ratio at C >= 1,
+  worse with more L1 at C <= 0.01. class_weight balanced: 0.7063, Brier 0.140.
+  Interactions vs tuned v1: education x hours +0.0003 (4/5 folds), age x
+  education 0.0000 (3/5), married x hours +0.0016 (5/5, kept). Grid, random
+  and Optuna TPE (20 trials each, v1 space): all 0.7083; TPE reproduces v1
+  (C = 5.18).
+- **Caveat:** the interaction and the best trials are selected on the same
+  folds (slightly optimistic, S5). L1 zeros on weak or duplicate columns
+  depend on the solver's shuffle (the script fixes `random_state=42`), so they
+  are not a stable feature selection. Married x hours combines two proxies for
+  sex (F30): re-check the fairness gap if it is adopted.
+- **Next:** proposed v2 space, not run: C 0.01-100 (log), L2 fixed,
+  class_weight None fixed (notebook 02, section 6). Needs the team's agreement
+  to edit `suggest_params()` in `tuning/tune.py`. Expected: about 0.708, as v1.
+- **Course link:** S2 logistic regression, L1 / L2 / Elastic Net; S5
+  bias/variance, validation curves, grid / random / TPE search; S6 class
+  weights; S7 Brier score.
+- **Use in:** R tuning (logistic regression). S tuning slide.
+
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
   but finds fewer of the high earners. With no single costly error in this case,
@@ -759,7 +794,10 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Fairness definition: equalized odds as primary, four-fifths rule as legal screen | Team | Adopted: fixed before the audit, used in `src/fairness.py` |
 | Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
 | Random forest diagnosis and tuning v2 (section 3e): search space read from the validation curves; final random forest = tuned v2 | Manel, 2026-10-20 | Done (F32, F36); `tuning/results/v2/best_params.json` |
-| Logistic regression diagnosis and tuning v2 | Soumaya | To do: same pattern as `tuning/random_forest.py` |
+| Logistic regression diagnosis (F37): baseline, C curves for L1 and L2, Elastic Net and Lasso zeros, interactions, search methods; same pattern as `tuning/random_forest.py` | Soumaya with Claude, 2026-10-20 | Done: `tuning/logistic_regression.py`, `tuning/results/logistic_regression/`, `notebooks/02_logistic_regression.ipynb`; uncommitted |
+| Logistic regression tuning v2 search space: C 0.01-100 (log), penalty fixed L2, class_weight fixed None; no Elastic Net | Proposed by Soumaya with Claude from the curves (F37) | Open: team agreement to edit `suggest_params()` in `tuning/tune.py`, then `python3 -m tuning.tune --version v2 --model lr`; not run |
+| Interaction rule, fixed before the run: an interaction is kept only if it adds >= 0.001 mean validation PR-AUC over tuned v1 AND is better in >= 4 of 5 folds | Soumaya with Claude, 2026-10-20 | Applied: only married x hours passes (F37) |
+| Add married x hours (`is_married` x `hours-per-week`) to the logistic regression Pipeline | Proposed (F37) | Open: needs a change in `src/pipeline.py` (shared) or an LR-only Pipeline, team agreement, and a fairness re-check by sex |
 | LightGBM diagnosis and tuning v2 (final model) | Hadiqa | To do: `tuning/lightgbm.py` (same pattern as `tuning/random_forest.py`), `notebooks/04_lightgbm.ipynb`, then `python3 -m tuning.tune --version v2 --model lgbm`; if v2 becomes the final model, re-run calibration and the fairness audit on it |
 
 ---
