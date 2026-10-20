@@ -47,13 +47,18 @@ def suggest_params(trial, name):
             "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
         }
     if name == "Random Forest":
+        # v2 (Manel): ranges read from the validation curves (tuning/results/random_forest/)
         return {
-            "n_estimators": trial.suggest_int("n_estimators", 100, 400, step=50),
-            "max_depth": trial.suggest_int("max_depth", 4, 24),
-            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 30, log=True),
-            "max_features": trial.suggest_categorical("max_features", ["sqrt", "log2", 0.5]),
-            "class_weight": trial.suggest_categorical(
-                "class_weight", [None, "balanced_subsample"]),
+            # fixed: a list with one value means "always this value"
+            "n_estimators": trial.suggest_categorical("n_estimators", [300]),
+            "criterion": trial.suggest_categorical("criterion", ["gini"]),
+            "class_weight": trial.suggest_categorical("class_weight", [None]),
+            # searched: the plateau of each curve, plus a margin
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 5, 30, log=True),
+            "max_depth": trial.suggest_int("max_depth", 8, 20),
+            "min_samples_split": trial.suggest_int("min_samples_split", 2, 200, log=True),
+            "max_samples": trial.suggest_float("max_samples", 0.3, 1.0),
+            "max_features": trial.suggest_categorical("max_features", ["sqrt", "log2", 0.3]),
         }
     if name == "LightGBM":
         return {

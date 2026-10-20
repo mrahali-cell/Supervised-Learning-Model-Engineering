@@ -1,0 +1,12 @@
+{
+  "Random Forest": {
+    "n_estimators": 300,
+    "criterion": "gini",
+    "class_weight": null,
+    "min_samples_leaf": 6,
+    "max_depth": 16,
+    "min_samples_split": 10,
+    "max_samples": 0.3903889713135253,
+    "max_features": "sqrt"
+  }
+}

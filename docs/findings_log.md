@@ -3,7 +3,7 @@
 Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
 (7 min + 3 min Q&A). Last updated 2026-10-20 (after the random forest
-diagnosis and the new project architecture).
+tuning v2).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -431,10 +431,8 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   and points to the class weights as the cause of F20/F22 for the random forest
   (other parameters differ too: the `class_weight` validation curve isolates it).
   Splitting criterion: Gini 0.641 vs entropy 0.641 validation PR-AUC
-  (**PROVISIONAL**, check run on 2026-10-19; to reproduce with
-  `python -m tuning.random_forest curves --param criterion`).
-- **Next:** validation curves for every course hyperparameter
-  (`python -m tuning.random_forest curves`), then the tuning v2 search space.
+  (reproduced in `tuning/results/random_forest/curves.csv`).
+- **Next:** done on 2026-10-20: validation curves and tuning v2 (F36).
 - **Course link:** S5 bias/variance, train vs validation gap; S7 calibration.
 - **Use in:** R tuning (random forest). S results slide.
 
@@ -488,6 +486,37 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S1 slide 21; S5 slides 9, 11, 13 (Pipeline, ColumnTransformer,
   fit on train only).
 - **Use in:** R protocol. S protocol slide.
+
+### F36 · Random forest tuning v2: same ranking as v1, trustworthy probabilities
+- **Finding:** a search space built from the validation curves gives the same
+  ranking as tuning v1, a small train-validation gap, and probabilities as good
+  as logistic regression's, without recalibration. Every trial lands on the
+  plateau: once the space is right the search method matters little, and the
+  ceiling is the information in the data.
+- **Evidence:** `python -m tuning.tune --version v2 --model rf` (Optuna TPE,
+  seed 42, 25 trials, objective = mean 5-fold PR-AUC; fixed: 300 trees, gini,
+  no class weights; searched: leaf 5-30, depth 8-20, split 2-200, max_samples
+  0.3-1.0, max_features sqrt / log2 / 0.3). Best: leaf 6, depth 16, split 10,
+  max_samples 0.39, sqrt (`tuning/results/v2/best_params.json`). Then
+  `python -m tuning.random_forest baseline`: train 0.754, validation
+  0.715 ± 0.013, gap 0.039, ROC-AUC 0.891, Brier 0.110 (v1: 0.749 / 0.715 /
+  0.035 / 0.136; baseline leaf 5: 0.802 / 0.711 / 0.091 / 0.111). All 25 trials
+  between 0.709 and 0.715; best of the first 10 (random) trials 0.7144, best
+  overall 0.7149.
+- **Validation curves** (`tuning/results/random_forest/curves.csv` and
+  `curves/*.png`; one setting at a time, the others at sklearn defaults, 200
+  trees): leaf best 0.714 at 10 (plateau 5-20); depth best 0.713 at 12 (depth
+  4: 0.684 with gap 0.004, underfitting; unlimited: 0.642); split best 0.714 at
+  100 (plateau 50-200); max_samples 0.685 at 30% vs 0.642 at 100%; max_features
+  sqrt 0.642 vs all columns 0.634; criterion gini 0.642 = entropy 0.642;
+  n_estimators 0.642 at 200 vs 0.643 at 400 (gap unchanged, 0.33); class_weight
+  balanced: PR-AUC 0.628 and Brier 0.145 vs 0.642 and 0.130.
+- **Caveat:** the best trial is selected on the same folds, so slightly
+  optimistic (S5). The settings interact: alone, leaf 10 was best; with 39% of
+  people per tree, Optuna prefers leaf 6.
+- **Course link:** S3 trees, S4 bagging, S5 validation curves and grid /
+  random / TPE search, S6-S7 class weights cost calibration.
+- **Use in:** R tuning (random forest). S tuning slide.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
@@ -648,17 +677,17 @@ one level above: it chooses the rules the trees must follow, by cross-validation
 
 | Hyperparameter | v0: sklearn defaults | Baseline | v1: Optuna, 25 trials | v2 |
 |---|---|---|---|---|
-| n_estimators | 100 | 300 | 300 (searched 100-400) | at the plateau of the curve |
-| max_depth | unlimited | unlimited | 15 (searched 4-24) | searched |
-| min_samples_leaf | 1 | 5 | 10 (searched 1-30) | searched |
-| min_samples_split | 2 | 2 | 2 (not searched) | searched |
-| max_features | sqrt | sqrt | log2 (sqrt, log2, 0.5) | searched |
-| max_samples | 100% | 100% | 100% (not searched) | searched |
-| criterion | gini | gini | gini (not searched) | gini (no difference, F32) |
-| class_weight | none | none | balanced_subsample | none, if the curve confirms |
-| **Val PR-AUC** | 0.639 ± 0.009 | 0.711 ± 0.012 | 0.715 ± 0.013 | to run |
-| **Train-val gap** | 0.333 | 0.091 | 0.035 | to run |
-| **Val Brier** | 0.131 | 0.111 | 0.136 | to run |
+| n_estimators | 100 | 300 | 300 (searched 100-400) | 300 (fixed: flat after 200) |
+| max_depth | unlimited | unlimited | 15 (searched 4-24) | 16 (searched 8-20) |
+| min_samples_leaf | 1 | 5 | 10 (searched 1-30) | 6 (searched 5-30) |
+| min_samples_split | 2 | 2 | 2 (not searched) | 10 (searched 2-200) |
+| max_features | sqrt | sqrt | log2 (sqrt, log2, 0.5) | sqrt (sqrt, log2, 0.3) |
+| max_samples | 100% | 100% | 100% (not searched) | 39% (searched 30-100%) |
+| criterion | gini | gini | gini (not searched) | gini (fixed: no difference) |
+| class_weight | none | none | balanced_subsample | none (fixed: confirmed by the curve) |
+| **Val PR-AUC** | 0.639 ± 0.009 | 0.711 ± 0.012 | 0.715 ± 0.013 | 0.715 ± 0.013 |
+| **Train-val gap** | 0.333 | 0.091 | 0.035 | 0.039 |
+| **Val Brier** | 0.131 | 0.111 | 0.136 | 0.110 |
 
 **Hypotheses tested in v2** (validation curves first, then Optuna on what matters):
 
@@ -671,6 +700,12 @@ one level above: it chooses the rules the trees must follow, by cross-validation
 | n_estimators | More trees never overfit; the score reaches a plateau | Flat curve after some number of trees |
 | Depth / leaf size vs fairness | Deeper trees use proxy combinations (married x occupation x hours) more, so they reproduce the gender gap more | The equalized-odds gap by sex grows with depth |
 
+**Results of the hypotheses (2026-10-20, F36):** growth limits confirmed
+(plateau at leaf 5-20, depth 12, split 50-200); diversity: smaller samples help
+(0.642 -> 0.685 at 30%), max_features has no clear effect; class weights
+confirmed harmful (Brier 0.130 -> 0.145); criterion no difference; trees flat
+after 200; the fairness hypothesis (depth vs sex gap) is not tested yet.
+
 **Expected gain:** about ±0.01 PR-AUC. Logistic regression, the random forest
 and LightGBM all stop around 0.71 with 6 inputs (F14, F19): the ceiling is the
 information in the data, not the model. The value of v2 is to explain *why*
@@ -678,7 +713,7 @@ information in the data, not the model. The value of v2 is to explain *why*
 
 **Steps:** (1) `python -m tuning.random_forest curves`; (2) fix what is settled;
 (3) `python -m tuning.tune --version v2 --model rf` with the new search space;
-(4) compare v0, baseline, v1 and v2. Status: diagnosis done, curves to run.
+(4) compare v0, baseline, v1 and v2. Status: done on 2026-10-20 (F36); final random forest = tuned v2.
 
 ---
 
@@ -723,7 +758,7 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Cutoff: best-F1 point for the neutral comparison; clients choose their own | Proposed | Open: confirm with the team |
 | Fairness definition: equalized odds as primary, four-fifths rule as legal screen | Team | Adopted: fixed before the audit, used in `src/fairness.py` |
 | Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
-| Random forest diagnosis and tuning v2 (section 3e) | Manel | Diagnosis done (F32); validation curves and v2 to run |
+| Random forest diagnosis and tuning v2 (section 3e): search space read from the validation curves; final random forest = tuned v2 | Manel, 2026-10-20 | Done (F32, F36); `tuning/results/v2/best_params.json` |
 | Logistic regression diagnosis and tuning v2 | Soumaya | To do: same pattern as `tuning/random_forest.py` |
 
 ---
@@ -751,8 +786,9 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 - [x] Are the probabilities calibrated? Diagnosed on the development set (F22,
       F23, F24). Still to do: fit the final calibrator on all out-of-fold
       predictions and check the calibrated final model on the test set, once.
-- [ ] Is the Random Forest's over-confidence caused by its balanced class
-      weights? Refit it without weights and compare the ECE (F20, F22). First
+- [x] Is the Random Forest's over-confidence caused by its balanced class
+      weights? Yes (F36): changing only that setting, Brier 0.130 -> 0.145;
+      tuned v2 without weights has Brier 0.110. Refit it without weights and compare the ECE (F20, F22). First
       evidence in F32 (Brier 0.111 without weights vs 0.136 with); the
       `class_weight` validation curve changes only that parameter.
 - [ ] Random forest v2 objective: PR-AUC only (as v1), PR-AUC with the Brier
@@ -813,7 +849,7 @@ imbalance S6; calibration S7; diagnostics and explainability S8; fairness S9).
       model.
 - [x] Random forest baseline table: train vs validation (F32,
       `tuning/results/random_forest/baseline.csv`).
-- [ ] Random forest validation curves
+- [x] Random forest validation curves
       (`tuning/results/random_forest/curves/*.png`), one per hyperparameter.
 - [ ] Optuna optimisation history (already saved as a figure in each MLflow
       parent run) and an MLflow runs screenshot.
