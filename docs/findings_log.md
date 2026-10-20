@@ -2,11 +2,12 @@
 
 Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
-(7 min + 3 min Q&A). Last updated 2026-10-18 (after the fairness audit).
+(7 min + 3 min Q&A). Last updated 2026-10-20 (after the random forest
+diagnosis and the new project architecture).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
-baseline run (`python -m tuning.baseline`, 5-fold CV on the development set, test set
-untouched). Items marked **PROVISIONAL** must be re-checked before use.
+scripts in `tuning/` (5-fold CV on the development set, test set untouched;
+results saved in `tuning/results/`). Items marked **PROVISIONAL** must be re-checked before use.
 
 To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
 (Markdown preview).
@@ -17,6 +18,11 @@ To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
 
 - **Dataset:** Adult / Census Income (OpenML, version 2; 1994 US Census;
   48,842 rows, 15 columns). State this at the top of the report.
+- **Research question:** we predict whether a person earns more than $50K
+  (`class`, as `high_income`) and measure **how biased the model is by sex**.
+  `sex`, `race` and `native-country` are never inputs, only used for the audit.
+  Hypothesis: the model reproduces the gender gap through proxies (marital
+  status, occupation, hours worked; F30, F31).
 - **Business case** (latest version, replaces the earlier public-benefit
   outreach case; team confirmation pending): a company builds ML models that
   predict whether a person earns more or less than $50K. Its clients use them
@@ -28,7 +34,8 @@ To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
   findings, one mitigation, and what it costs in accuracy (S8, S9).
 - **Target:** `high_income` = 1 if income > $50K (23.94% of rows). It was
   `low_income` = 1 in the first EDA version (76.06%). Flipped in `src/data.py`
-  on branch `soumaya/dev` (uncommitted; team agreement pending) because under
+  by Soumaya, merged in `main` on 2026-10-19 (EDA notebook and README updated
+  too), because under
   this case the orientation is a free choice and the rare class as positive
   fits the course (S6): PR-AUC is informative (random baseline 0.24, not 0.76),
   class weights and SMOTE can be tested as taught, and it matches the dataset
@@ -47,6 +54,37 @@ To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
   Legal screen = the **four-fifths rule** on selection rates (the S9 example of
   disparate-impact guidance). Also report demographic parity and predictive
   parity, and explain why they conflict.
+
+---
+
+## 1b. Who did what (for the individual Q&A)
+
+### Manel
+- **GitHub repository and workflow:** created the repository, one branch per
+  member (`manel/dev`, `soumaya/dev`, `hadiqa/dev`), changes reach `main`
+  through pull requests.
+- **EDA** (`notebooks/01_eda.ipynb`, Steps 1-4c, 6, 7 and 9): context and
+  documentation; integrity (missing values, duplicates, target imbalance);
+  storage vs semantic types; ranges, outliers and rare categories; features vs
+  target; leakage audit (capital gains); cleaning and split; preview of the data
+  after feature engineering and preprocessing. Findings F1-F11, F33, F34.
+- **`src/data.py`:** load -> clean (fixed rules from the EDA) -> 80/20 stratified
+  split, 5-fold stratified CV; the `FEATURES` / `SENSITIVE` / `TARGET` constants
+  every script imports (F7, F10).
+- **`src/pipeline.py`, preprocessing:** imputation, scaling and one-hot encoding
+  inside the Pipeline, re-fitted in each CV fold (F35). Feature engineering was
+  added to it by Soumaya (F12).
+- **README:** quick start for the team, architecture, how to run each stage.
+- **Project architecture** (2026-10-19): `src/` as a library, `tuning/` for all
+  training and tuning, notebooks only explain (section 5).
+- **Random forest:** diagnosis before tuning (F32, `tuning/random_forest.py`,
+  `notebooks/03_random_forest.ipynb`) and the tuning v2 plan (section 3e).
+
+### Soumaya
+- (to complete)
+
+### Hadiqa
+- (to complete)
 
 ---
 
@@ -390,11 +428,66 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   (0.33); RF baseline, min_samples_leaf 5, 0.803 / 0.711 (0.09); RF tuned v1
   0.749 / 0.715 ± 0.013 (0.035). Validation Brier: baseline 0.111, tuned v1 0.136
   (`class_weight="balanced_subsample"`); ROC-AUC 0.890 vs 0.891. Confirms F19
-  and isolates the cause of F20/F22 for the random forest.
+  and points to the class weights as the cause of F20/F22 for the random forest
+  (other parameters differ too: the `class_weight` validation curve isolates it).
+  Splitting criterion: Gini 0.641 vs entropy 0.641 validation PR-AUC
+  (**PROVISIONAL**, check run on 2026-10-19; to reproduce with
+  `python -m tuning.random_forest curves --param criterion`).
 - **Next:** validation curves for every course hyperparameter
   (`python -m tuning.random_forest curves`), then the tuning v2 search space.
 - **Course link:** S5 bias/variance, train vs validation gap; S7 calibration.
 - **Use in:** R tuning (random forest). S results slide.
+
+### F33 · Data: outliers classified, not deleted
+- **Finding:** the extreme values are census caps (top-coding) or plausible
+  edge cases, not errors, so every row is kept. The IQR rule cannot be used:
+  with 91.7% of capital gains at 0, it would flag every non-zero gain.
+- **Evidence:** EDA Step 4b. `capital-gain` = 99,999: 244 people (cap, real high
+  earners); `hours-per-week` = 99: 137 (probable cap); `age` = 90: 55 (90+ recorded
+  as 90); `fnlwgt` up to 1.49M (sampling weight, dropped in Step 6). Documented
+  filters respected: minimum age 17, minimum hours 1.
+- **Course link:** S1 data quality: understand a value before removing it.
+- **Use in:** R data cleaning. S backup (Q&A: "what about outliers?").
+
+### F34 · Data: rare categories merged with fixed rules, before the split
+- **Finding:** categories with a few dozen people are merged with the closest
+  category by meaning and by income rate. A rare category gives an unstable
+  estimate and a one-hot column that can be missing from some CV folds. The
+  merge is a fixed rule (nothing is learned from the data), so it is safe
+  before the split.
+- **Evidence:** EDA Steps 4b-4c and Step 7 summary (% earning > $50K).
+  `workclass`: Without-pay (21) + Never-worked (10) -> No-pay (both near 0%);
+  `marital-status`: Married-AF-spouse (37, 37.8%) -> Married-civ-spouse (44.6%);
+  `occupation`: Armed-Forces (15, 33.3%) -> Protective-serv (31.3%);
+  `native-country` (audit only): 41 countries -> United-States (89.7%) / Mexico
+  (1.95%) / Other; missing stays missing. The 10 Never-worked people with no
+  occupation get `occupation = "Never-worked"` (not applicable, not unknown).
+- **Course link:** S1 fixed cleaning rules vs learned transformations; S5 encoding.
+- **Use in:** R data cleaning.
+
+### F35 · Preprocessing: everything that learns from the data is inside the Pipeline
+- **Finding:** imputation, scaling and one-hot encoding learn values from the
+  data (a median, a mean and standard deviation, a list of categories), so they
+  are fitted on the training folds only, inside the Pipeline, and re-fitted in
+  each CV fold. Fitting them on all the data first would leak information from
+  the validation rows (preprocessing leakage).
+- **Evidence:** `src/pipeline.py`, a `ColumnTransformer` with one chain per
+  column type:
+  numeric (`age`, `education-num`, `hours-per-week`, `age_squared`): median
+  imputation, then standardisation (z-score);
+  categorical (`workclass`, `marital-status`, `occupation`): missing ->
+  `"Unknown"`, then one-hot encoding with `handle_unknown="ignore"`;
+  engineered 0/1 columns: passed through. 6 inputs -> 11 columns after feature
+  engineering -> 37 columns after preprocessing (32 without feature
+  engineering), no missing value left (EDA Step 9).
+- **Why these choices:** one-hot because the categories have no order (a number
+  code would invent one for a linear model); `"Unknown"` keeps the information
+  that the value was missing, which is not random (F2); `handle_unknown="ignore"`
+  so a category absent from a training fold does not crash; scaling matters for
+  regularised logistic regression and changes nothing for trees.
+- **Course link:** S1 slide 21; S5 slides 9, 11, 13 (Pipeline, ColumnTransformer,
+  fit on train only).
+- **Use in:** R protocol. S protocol slide.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
@@ -541,6 +634,52 @@ By race at the best-F1 threshold (groups under 500 people are unstable):
 | Amer-Indian-Eskimo (small) | 383 | 0.110 | 0.188 | 0.667 | 0.129 | 0.389 |
 | Other (small) | 326 | 0.123 | 0.156 | 0.700 | 0.080 | 0.549 |
 
+## 3e. Random forest: diagnosis and tuning v2 (Manel)
+
+**How a random forest learns.** Each tree picks, at every node, the split that
+reduces impurity the most (Gini by default, or entropy). This is local and
+greedy: unlike logistic regression and LightGBM, the forest never minimises a
+global log-loss, and its "probability" is the share of trees voting yes. That is
+why its probabilities are the least reliable of the three (F22). Tuning works
+one level above: it chooses the rules the trees must follow, by cross-validation.
+
+**Versions** (5-fold CV, development set; results in
+`tuning/results/random_forest/baseline.csv`):
+
+| Hyperparameter | v0: sklearn defaults | Baseline | v1: Optuna, 25 trials | v2 |
+|---|---|---|---|---|
+| n_estimators | 100 | 300 | 300 (searched 100-400) | at the plateau of the curve |
+| max_depth | unlimited | unlimited | 15 (searched 4-24) | searched |
+| min_samples_leaf | 1 | 5 | 10 (searched 1-30) | searched |
+| min_samples_split | 2 | 2 | 2 (not searched) | searched |
+| max_features | sqrt | sqrt | log2 (sqrt, log2, 0.5) | searched |
+| max_samples | 100% | 100% | 100% (not searched) | searched |
+| criterion | gini | gini | gini (not searched) | gini (no difference, F32) |
+| class_weight | none | none | balanced_subsample | none, if the curve confirms |
+| **Val PR-AUC** | 0.639 ± 0.009 | 0.711 ± 0.012 | 0.715 ± 0.013 | to run |
+| **Train-val gap** | 0.333 | 0.091 | 0.035 | to run |
+| **Val Brier** | 0.131 | 0.111 | 0.136 | to run |
+
+**Hypotheses tested in v2** (validation curves first, then Optuna on what matters):
+
+| Hyperparameters | Hypothesis | Confirmed if |
+|---|---|---|
+| min_samples_leaf, max_depth, min_samples_split | Trees still memorise a little: stronger limits help (variance) | The gap shrinks, validation stays stable |
+| max_features, max_samples | More diverse trees average their errors better | Validation goes up slightly |
+| class_weight | Weighting does not help the ranking and damages the probabilities | Same PR-AUC, worse Brier |
+| criterion | Gini and entropy give the same forest here | Same scores (already seen, F32) |
+| n_estimators | More trees never overfit; the score reaches a plateau | Flat curve after some number of trees |
+| Depth / leaf size vs fairness | Deeper trees use proxy combinations (married x occupation x hours) more, so they reproduce the gender gap more | The equalized-odds gap by sex grows with depth |
+
+**Expected gain:** about ±0.01 PR-AUC. Logistic regression, the random forest
+and LightGBM all stop around 0.71 with 6 inputs (F14, F19): the ceiling is the
+information in the data, not the model. The value of v2 is to explain *why*
+(bias vs variance) and to get better probabilities, not to win accuracy.
+
+**Steps:** (1) `python -m tuning.random_forest curves`; (2) fix what is settled;
+(3) `python -m tuning.tune --version v2 --model rf` with the new search space;
+(4) compare v0, baseline, v1 and v2. Status: diagnosis done, curves to run.
+
 ---
 
 ## 4. The cutoff trade-off (LightGBM, engineered features, out-of-fold)
@@ -568,20 +707,23 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 |---|---|---|
 | Dataset: Adult / Census Income (OpenML v2) | Soumaya, from the project brief | Confirmed |
 | Business case: model vendor whose income-prediction models are used for audits; study = find and reduce bias to limit legal and financial exposure | Soumaya, latest revision (replaces public-benefit outreach) | Chosen; team confirmation pending. EDA Step 5 still says "energy discount program (preferred)" |
-| Target orientation: income > $50K = 1 (`high_income`) | Proposed by Claude, applied by Soumaya on `soumaya/dev`, uncommitted | Open: team agreement; EDA notebook text still says `low_income` |
-| Original target `low_income` = 1 for income <= $50K; key metric recall on low earners | Manel (EDA) | Replaced on `soumaya/dev` by `high_income` (see next row); `main` still has the original |
+| Target orientation: income > $50K = 1 (`high_income`) | Proposed by Claude, applied by Soumaya | Applied in `src/data.py`, the EDA notebook and the README; merged in main 2026-10-19 |
+| Original target `low_income` = 1 for income <= $50K; key metric recall on low earners | Manel (EDA) | Replaced by `high_income` (see previous row) |
 | 6 model inputs; sex, race, native-country excluded; capital-gain/loss, fnlwgt, education, relationship dropped | Manel (EDA) | In the code; team confirmation pending |
 | 80/20 stratified split, `random_state=42`, 5-fold stratified CV | Manel (`src/data.py`) | In the code, merged in main |
-| Calibration protocol: out-of-fold predictions on the development set, Platt and isotonic scored by a second 5-fold CV, reliability by sex; test set not used | Soumaya with Claude | Done in `src/evaluate.py` (`python -m src.evaluate calibration`), uncommitted |
-| EDA notebook aligned with the audit case: new Steps 4d (groups, proxies), 5 (framing), 7b (group sizes) and 8 (bias sources, hand-over); target shown as `high_income` | Soumaya with Claude, 2026-10-19 | Done in `notebooks/01_eda.ipynb` (re-executed), uncommitted. Based on the earlier 29-cell version restored on `soumaya/dev`; the Step 9 preview of the newer version is not in it |
-| Fairness protocol: sex as the audited attribute; equalized odds primary and four-fifths rule as legal screen (fixed before the results); one mitigation, `ThresholdOptimizer`, cross-fitted on out-of-fold scores; race only audited | Soumaya with Claude | Done on the development set in `src/fairness.py` (`python -m src.fairness audit`), uncommitted; test-set evaluation pending |
-| Candidate final model: LightGBM + Platt scaling | Proposed by Claude from F19-F24 | Provisional: confirm after the fairness audit and the single test-set evaluation |
+| Outliers kept: they are census caps or plausible values (F33) | Manel (EDA Step 4b) | In the EDA; nothing to apply in the code |
+| Rare categories merged; native-country grouped into United-States / Mexico / Other (F34) | Manel (EDA Steps 4b-4c, `src/data.py`) | In the code, merged in main |
+| Preprocessing inside the Pipeline: median + scaling for numbers, "Unknown" + one-hot for categories (F35) | Manel (`src/pipeline.py`) | In the code, merged in main |
+| Calibration protocol: out-of-fold predictions on the development set, Platt and isotonic scored by a second 5-fold CV, reliability by sex; test set not used | Soumaya with Claude | Done in `src/evaluate.py` (`python -m src.evaluate calibration`), merged in main |
+| EDA notebook aligned with the audit case: new Steps 4d (groups, proxies), 5 (framing), 7b (group sizes) and 8 (bias sources, hand-over); target shown as `high_income` | Soumaya with Claude, 2026-10-19 | Done, merged in main together with Manel's Step 9 preview |
+| Fairness protocol: sex as the audited attribute; equalized odds primary and four-fifths rule as legal screen (fixed before the results); one mitigation, `ThresholdOptimizer`, cross-fitted on out-of-fold scores; race only audited | Soumaya with Claude | Done on the development set in `src/fairness.py` (`python -m src.fairness audit`), merged in main; test-set evaluation pending |
+| Candidate final model: LightGBM + Platt scaling; logistic regression as the transparent benchmark; the random forest tuned to show bias vs variance | Proposed by Claude from F19-F24; Manel agrees (2026-10-19) | Provisional: confirm after the fairness audit and the single test-set evaluation |
 | Tuning protocol: Optuna (TPE, seed 42), 25 trials per model, objective = mean 5-fold CV PR-AUC; class weighting is a tuned hyperparameter; MLflow logging in a SQLite file | Soumaya with Claude | Done (first in `src/train.py`, now `tuning/tune.py`); results in `tuning/results/v1/` |
-| Engineered features: is_married, has_degree, part_time, overtime, age_squared | Soumaya with Claude, 2026-10-18 | Uncommitted on the local checkout |
+| Engineered features: is_married, has_degree, part_time, overtime, age_squared | Soumaya with Claude, 2026-10-18 | In `src/pipeline.py`, merged in main |
 | Cutoff: best-F1 point for the neutral comparison; clients choose their own | Proposed | Open: confirm with the team |
-| Fairness definition: equalized odds as primary, four-fifths rule as legal screen | Proposed | Open: confirm before looking at fairness results |
+| Fairness definition: equalized odds as primary, four-fifths rule as legal screen | Team | Adopted: fixed before the audit, used in `src/fairness.py` |
 | Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
-| Random forest diagnosis and tuning v2 | Manel | In progress: `tuning/random_forest.py`, `notebooks/03_random_forest.ipynb` |
+| Random forest diagnosis and tuning v2 (section 3e) | Manel | Diagnosis done (F32); validation curves and v2 to run |
 | Logistic regression diagnosis and tuning v2 | Soumaya | To do: same pattern as `tuning/random_forest.py` |
 
 ---
@@ -590,9 +732,8 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 
 - [ ] Is the business case final for all three members? Ask Manel and Hadiqa;
       update EDA Step 5 wording.
-- [ ] Team agreement on the flipped target (`high_income`): `main` and the EDA
-      notebook still use `low_income`; src/data.py, README and this log use the
-      new one.
+- [x] Team agreement on the flipped target (`high_income`): applied in
+      `src/data.py`, the EDA notebook and the README, merged in main.
 - [ ] Which cutoff do we show in the report (best F1 or a client-driven choice)
       and how do we justify it?
 - [x] Are the sex and race groups big enough in the test set for a stable
@@ -601,14 +742,22 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 - [ ] The tuned models do NOT separate (gaps of 0.004-0.011 PR-AUC vs a fold
       standard deviation of 0.013). How do we choose the final model? Options:
       paired comparison across folds, nested CV (S5), and secondary criteria
-      (calibration, interpretability, fairness behaviour).
+      (calibration, interpretability, fairness behaviour). Manel's position
+      (2026-10-19): the three families tie within noise, so choose on
+      calibration and explainability; keep LightGBM + Platt, with logistic
+      regression as the transparent benchmark.
 - [ ] Re-run the tuning with a larger budget or nested CV? (LightGBM plateaus
       early, so the expected gain is small.)
 - [x] Are the probabilities calibrated? Diagnosed on the development set (F22,
       F23, F24). Still to do: fit the final calibrator on all out-of-fold
       predictions and check the calibrated final model on the test set, once.
 - [ ] Is the Random Forest's over-confidence caused by its balanced class
-      weights? Refit it without weights and compare the ECE (F20, F22).
+      weights? Refit it without weights and compare the ECE (F20, F22). First
+      evidence in F32 (Brier 0.111 without weights vs 0.136 with); the
+      `class_weight` validation curve changes only that parameter.
+- [ ] Random forest v2 objective: PR-AUC only (as v1), PR-AUC with the Brier
+      score or log-loss checked, or several goals at once including the
+      equalized-odds gap by sex (section 3e)?
 - [ ] Where does the model fail (weakest segment by recall)? Not checked yet
       (Session 8).
 - [x] Does a mitigation close the gaps by sex, and at what cost? On the
@@ -662,6 +811,10 @@ imbalance S6; calibration S7; diagnostics and explainability S8; fairness S9).
       then the test score (once).
 - [ ] Precision-recall trade-off plot or the table of section 4 for the chosen
       model.
+- [x] Random forest baseline table: train vs validation (F32,
+      `tuning/results/random_forest/baseline.csv`).
+- [ ] Random forest validation curves
+      (`tuning/results/random_forest/curves/*.png`), one per hyperparameter.
 - [ ] Optuna optimisation history (already saved as a figure in each MLflow
       parent run) and an MLflow runs screenshot.
 - [x] Reliability diagram before and after calibration, with Brier and ECE
@@ -685,8 +838,8 @@ imbalance S6; calibration S7; diagnostics and explainability S8; fairness S9).
 |---|---|---|
 | 1 | Problem and business case | Who benefits, what the costly error is (section 1) |
 | 2 | Data and leakage decisions | F1-F7. Capital gains dropped on purpose (F4, F5) |
-| 3 | Honest protocol | F10-F11. Locked test set, CV inside the Pipeline |
-| 4 | Features and model progression | F12-F15. Simple model nearly as good; features help only the linear model |
+| 3 | Honest protocol | F10-F11, F35. Locked test set, preprocessing and CV inside the Pipeline |
+| 4 | Features and model progression | F12-F15, F32. Simple model nearly as good; features help only the linear model. Three model families tie within noise: the ceiling is the data, and changing the model does not remove a bias that comes from the data |
 | 5 | Imbalance and operating point | F16-F18. Why class weights did not fit; the cutoff is a business choice |
 | 6 | Trust and fairness (to complete) | Calibration, weakest segment, SHAP, fairness by sex with a mitigation and its cost |
 | 7 | Limitations and take-aways | 1994 data, arbitrary threshold, historical gaps, proof of concept only |
