@@ -57,11 +57,13 @@ src/                  LIBRARY: imported by everything else, never trains a model
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py         stage 1: all models with default parameters
     random_forest.py    random forest diagnosis: baseline table + validation curves (Manel)
+    lightgbm.py         LightGBM diagnosis: baseline table + validation curves (Hadiqa, to write)
     tune.py             stage 2: Optuna search + MLflow tracking, one search space per model
     results/            NUMBERS: everything the scripts produce
         v1/best_params.json         first Optuna run, all three models (Soumaya)
         v2/best_params.json         tuning after the diagnosis (random forest so far)
         random_forest/              baseline.csv, curves.csv, curves/*.png
+        lightgbm/                   same files for LightGBM (Hadiqa)
 notebooks/            EXPLANATIONS: read the results files and comment them, no training
     01_eda.ipynb                  EDA: every data decision and why
     02_logistic_regression.ipynb  one notebook per model: baseline, diagnosis, curves, tuning, findings
