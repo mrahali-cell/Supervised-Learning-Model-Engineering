@@ -1,0 +1,4 @@
+method,trials,best val PR-AUC,best val PR-AUC std,best val ROC-AUC,best val Brier,best trial,best C,best penalty,best class_weight,seconds
+grid,20,0.7083,0.0129,0.8887,0.1113,10,5.6234,l2,None,57.8231
+random,20,0.7083,0.0129,0.8887,0.1113,15,4.4161,l1,None,66.9078
+Optuna TPE,20,0.7083,0.0129,0.8887,0.1113,16,5.1766,l2,None,51.5329

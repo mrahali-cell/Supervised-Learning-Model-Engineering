@@ -1,0 +1,5 @@
+experiment,train PR-AUC,val PR-AUC,val PR-AUC std,gap PR-AUC,train ROC-AUC,val ROC-AUC,val ROC-AUC std,train Brier,val Brier,val Brier std,not converged,seconds
+Dummy (predicts the base rate),0.2394,0.2394,0.0,-0.0,0.5,0.5,0.0,0.1821,0.1821,0.0,0,0.3809
+"LR defaults, 6 inputs only (C=1, L2)",0.6889,0.688,0.0107,0.0009,0.8832,0.8826,0.0051,0.1141,0.1144,0.0022,0,0.9225
+"LR defaults + engineered features (C=1, L2)",0.7096,0.7082,0.0128,0.0014,0.8896,0.8888,0.0056,0.111,0.1113,0.0026,0,1.2017
+"LR tuned v1 (C=5.18, L2)",0.7097,0.7083,0.0129,0.0014,0.8896,0.8887,0.0056,0.1109,0.1113,0.0027,0,1.5953
