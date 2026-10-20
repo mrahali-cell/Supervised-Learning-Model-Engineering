@@ -74,6 +74,11 @@ def run_baseline(X, y, cv):
             n_estimators=300, min_samples_leaf=5, n_jobs=-1, random_state=RANDOM_STATE),
         "RF tuned v1": build_model("Random Forest", best_v1),
     }
+        # Add tuning v2 to the comparison once it exists
+    v2_path = TUNING_RESULTS_DIR / "v2" / "best_params.json"
+    if v2_path.exists():
+        best_v2 = json.loads(v2_path.read_text())["Random Forest"]
+        experiments["RF tuned v2"] = build_model("Random Forest", best_v2)
     rows = []
     for name, model in experiments.items():
         r = train_val_scores(build_pipeline(model), X, y, cv)
