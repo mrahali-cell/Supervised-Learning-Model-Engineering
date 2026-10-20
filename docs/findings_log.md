@@ -760,6 +760,7 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
 | Random forest diagnosis and tuning v2 (section 3e): search space read from the validation curves; final random forest = tuned v2 | Manel, 2026-10-20 | Done (F32, F36); `tuning/results/v2/best_params.json` |
 | Logistic regression diagnosis and tuning v2 | Soumaya | To do: same pattern as `tuning/random_forest.py` |
+| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | To do: `tuning/lightgbm.py` (same pattern as `tuning/random_forest.py`), `notebooks/04_lightgbm.ipynb`, then `python3 -m tuning.tune --version v2 --model lgbm`; if v2 becomes the final model, re-run calibration and the fairness audit on it |
 
 ---
 
