@@ -19,3 +19,6 @@ mlflow.db
 
 # Tuning results are small and part of the deliverable: keep them
 !tuning/results/**/*.csv
+
+# logs and documents
+docs/findings_log.md
