@@ -1,4 +1,4 @@
-"""Logistic regression: diagnosis before tuning (Soumaya).
+"""Logistic regression: diagnosis before tuning.
 
 How a logistic regression learns: it gives each column a weight, adds them up
 and turns the sum into a probability with the sigmoid. Training minimises ONE

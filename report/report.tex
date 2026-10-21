@@ -17,11 +17,11 @@
 \setlist{itemsep=1pt,topsep=3pt}
 \setlength{\parskip}{3pt}
 \emergencystretch=3em
-\newcommand{\todo}[1]{\textcolor{red!75!black}{\textbf{[to do: #1]}}}
+\graphicspath{{figures/}{../reports/figures/}{../tuning/results/mlflow/}}
 \newcommand{\code}[1]{\texttt{#1}}
 
 \title{\vspace{-1.2cm}Auditing an income-prediction model for sex bias\\[2pt]
-\large Supervised Learning \& Model Engineering (MSA-DATB09-04) --- Project report (draft)}
+\large Supervised Learning \& Model Engineering (MSA-DATB09-04): project report}
 \author{Manel Rahali, Soumaya Atoui, Hadiqa Javaid\\[2pt]
 \small Albert School, Fall 2026\\
 \small Repository: \url{https://github.com/mrahali-cell/Supervised-Learning-Model-Engineering}}
@@ -32,187 +32,235 @@
 \maketitle
 
 \begin{center}
-\fbox{\parbox{0.92\textwidth}{\centering\textbf{Dataset: Option 1 --- Adult / Census Income}\\
+\fbox{\parbox{0.92\textwidth}{\centering\textbf{Dataset: Option 1, Adult / Census Income}\\
 \code{fetch\_openml(name="adult", version=2)}, 48{,}842 people, 15 columns, 1994 US Census \cite{kohavi1996}.}}
 \end{center}
 
 \begin{abstract}
-\noindent A company sells models that predict whether a person earns more than \$50K a year; its clients use the predictions for decisions such as audits. We perform the \emph{model-audit step}: build the best honest model the data allows, then measure how unequally it treats women and men, reduce part of that gap and show what it costs. This draft covers the first stages: problem framing, exploratory analysis, preprocessing and feature engineering, class imbalance, the model progression, and the tuning of logistic regression and the random forest. With six legitimate inputs, logistic regression, a random forest and LightGBM (default settings) reach the same level (about 0.71 PR-AUC, 0.89 ROC-AUC). For the random forest, validation curves show that limiting tree growth fixes its overfitting, and a search space built from these curves (tuning v2) keeps the ranking of the first tuning while restoring trustworthy probabilities (Brier 0.110 instead of 0.136). The EDA shows that the inputs are proxies for sex, which the later stages (calibration, explainability, fairness audit, test-set evaluation) will examine.
+\noindent A company sells models that predict whether a person earns more than \$50K a year, and its clients use the predictions in decisions such as audits. We built the best model that six legitimate inputs allow, then measured how differently it treats women and men, although it never sees sex. Logistic regression, a random forest and LightGBM all stop at about 0.71 PR-AUC, so the limit is the information in the inputs, not the model. The final model, a tuned LightGBM, scores 0.7148 PR-AUC and 0.8945 ROC-AUC on the untouched test set, and its probabilities are calibrated for both sexes. At its default threshold it still finds 57\% of high-earning women against 78.5\% of high-earning men, mostly through marital status. Per-sex thresholds equalise the two error rates on the test set for about 0.03 of balanced accuracy, but they widen the gap in precision and still fail the four-fifths rule.
 \end{abstract}
 
 % ---------------------------------------------------------------
-\section{Problem framing and evaluation protocol}
+\section{Problem, metrics and protocol}
 
-\paragraph{Use case.} If an income model treats some groups worse than others, the audit decisions built on it become unfair, and its clients face sanctions, legal action and financial loss. Our deliverable is the evidence an auditor needs: how biased the model is by sex, one mitigation, and what it costs. The research question is \emph{how biased by sex is a model that predicts income $>$ \$50K without ever seeing sex?} Our hypothesis is that it rebuilds the gender gap through proxies: marital status, occupation and hours worked.
+\paragraph{Use case.} If an income model treats some groups worse than others, the audit decisions built on it become unfair, and the company's clients face sanctions, legal action and financial loss. We act as the auditor: build the most accurate honest model, measure how unequally it treats women and men, reduce part of the gap and state what that costs. Our hypothesis is that a model that never sees sex rebuilds the gender gap through proxies such as marital status, occupation and hours worked.
 
-\paragraph{Target and metrics.} The target \code{high\_income} = 1 if income $>$ \$50K (23.9\% of people). In an audit neither error dominates, so we chose the orientation that makes the metrics informative: the rare class as positive (Session~6). Accuracy is uninformative (always answering ``no'' scores 76\%), and ROC-AUC rewards the many correct rejections of low earners. We therefore rank models with \textbf{PR-AUC}, whose floor is the prevalence (0.239), report ROC-AUC beside it, and judge the probabilities with the \textbf{Brier score}. With the first orientation (low income = 1) the PR-AUC floor was 0.76 and every model scored about 0.96, which hid the differences.
+\paragraph{Target and metrics.} The target \code{high\_income} equals 1 when income exceeds \$50K (23.94\% of people). In an audit neither error dominates, so we took the rare class as positive, which makes the ranking metric informative. Accuracy is not: always answering ``no'' scores 76\%. We rank models with the average precision (PR-AUC),
+\begin{equation}
+\mathrm{AP} = \sum_k (R_k - R_{k-1})\,P_k ,
+\end{equation}
+where $P_k$ and $R_k$ are the precision and recall at the $k$-th threshold. A random ranking scores the prevalence, 0.239. ROC-AUC is reported beside it, and the quality of the probabilities is judged with the Brier score and the calibration error (Section~\ref{sec:calib}).
 
-\paragraph{Fairness definition, fixed before any result.} Primary: \textbf{equalized odds} (equal true- and false-positive rates for women and men) \cite{hardt2016}, because for a general-purpose model both kinds of error can harm someone. Legal screen: the \textbf{four-fifths rule} on selection rates. Demographic parity and predictive parity will also be reported (Section~\ref{sec:fair}).
+\paragraph{Fairness definition, fixed before any result.} Our primary definition is \textbf{equalized odds}: equal true- and false-positive rates for women and men \cite{hardt2016}, because a general-purpose model can harm someone through both kinds of error. The legal screen is the \textbf{four-fifths rule} on selection rates \cite{eeoc1978}. Demographic parity and predictive parity are reported too (Section~\ref{sec:fair}).
 
-\paragraph{Honest protocol.} After fixed cleaning rules, the data is split once into a development set (80\%, 39{,}032 people) and a test set (20\%, 9{,}758 people), stratified on the target (23.94\% high earners in both) with \code{random\_state=42}. All model choices use 5-fold stratified cross-validation on the development set; the test set stays locked until the final evaluation. Anything that learns from the data (imputation, scaling, encoding) lives inside the Pipeline and is re-fitted in every fold (Session~5). Table~\ref{tab:steps} maps the project to the course and the code.
-
-\begin{table}[H]
-\centering\small
-\begin{tabularx}{\textwidth}{@{}c>{\raggedright}p{5.0cm}>{\raggedright}Xc>{\raggedright\arraybackslash}p{2.7cm}@{}}
-\toprule
-\# & Step & Where in the code & Req. & Status \\
-\midrule
-1--3 & Framing, EDA, cleaning, stratified split & \code{notebooks/01\_eda.ipynb}, \code{src/data.py} & 1 & done \\
-4 & Feature engineering + preprocessing in one Pipeline & \code{src/pipeline.py} & 2, 5 & done \\
-5 & Baseline progression: Dummy $\to$ LR $\to$ RF $\to$ LightGBM & \code{tuning/baseline.py} & 3, 4 & done \\
-6--7 & Diagnosis (validation curves), Optuna tuning, MLflow & \code{tuning/random\_forest.py}, \code{tuning/tune.py} & 6, 7 & LR, RF done; LightGBM in progress \\
-8 & Calibration & \code{src/evaluate.py} & 9 & to do on the final model \\
-9 & Explainability (SHAP) & & 8 & to do \\
-10 & Fairness audit and mitigation & \code{src/fairness.py} & 10 & to do on the final model \\
-11 & Test set, once: final metrics, fairness before / after & & 9, 10 & to do \\
-\bottomrule
-\end{tabularx}
-\caption{The project in 11 steps. Scripts run; notebooks only explain results; \code{docs/findings\_log.md} records every finding with its numbers.}
-\label{tab:steps}
-\end{table}
+\paragraph{Honest protocol.} After fixed cleaning rules, the data was split once into a development set (80\%, 39{,}032 people) and a test set (20\%, 9{,}758 people), stratified on the target with \code{random\_state=42}. Every choice (features, models, hyperparameters, threshold, calibration, mitigation) was made with 5-fold stratified cross-validation on the development set. Everything that learns from the data sits inside one scikit-learn \code{Pipeline} \cite{pedregosa2011} and is refitted in every fold. The test set was opened once, at the end, with every choice frozen.
 
 % ---------------------------------------------------------------
-\section{Data and exploratory analysis}
+\section{Data, leakage and features}
 
-\paragraph{Integrity.} Missing values affect three columns: \code{workclass} (5.73\%), \code{occupation} (5.75\%), \code{native-country} (1.75\%). They are not random: all 2{,}799 people missing \code{workclass} also miss \code{occupation}; the 10 extra missing occupations belong to people who never worked, for whom occupation is \emph{not applicable} (set to ``Never-worked''). Other missing values become an explicit ``Unknown'' category inside the Pipeline, which keeps the information that the value was missing. We removed 52 exact duplicates (0.11\%) so the same record cannot sit on both sides of the split. Extreme values are census caps (244 capital gains at 99{,}999; 137 people at 99 hours; 55 at age 90) and were kept; the IQR rule is unusable when 91.7\% of capital gains are zero. Categories with a few dozen people were merged by meaning and income rate: \emph{Without-pay} (21) and \emph{Never-worked} (10) into \emph{No-pay}, 37 \emph{Married-AF-spouse} into \emph{Married-civ-spouse}, 15 \emph{Armed-Forces} into \emph{Protective-serv}; \code{native-country} was grouped into United States / Mexico / Other. These fixed rules learn nothing from the data and are safe before the split.
+\paragraph{Integrity and cleaning.} Three columns have missing values: \code{workclass} (5.73\%), \code{occupation} (5.75\%) and \code{native-country} (1.75\%). They are not random: the same 2{,}799 people miss both \code{workclass} and \code{occupation}, and the 10 extra missing occupations belong to people who never worked, for whom occupation does not apply. We removed 52 exact duplicates before the split so that no record sits on both sides. Extreme values are census caps (244 capital gains at 99{,}999, 137 people at 99 hours, 55 at age 90), so they were kept. Categories with a few dozen people were merged with the closest category by meaning and income rate. These rules learn nothing from the data, so they are safe before the split.
 
-\paragraph{Leakage audit.} For each column we asked whether it would be known at prediction time (Session~1). Capital gains fail: 98.4\% of people with a gain $\geq$ \$10{,}000 earn more than \$50K, and all 244 at the cap do; the variable is probably derived from income and is not collected by a short questionnaire. We dropped \code{capital-gain} and \code{capital-loss}. This is why our scores (about 0.89 ROC-AUC) must not be compared with published ones (0.92--0.93), which use them \cite{chakrabarty2018}.
+\paragraph{Leakage.} For each column we asked whether it would be known when a prediction is made. Capital gains fail this test: 98.4\% of people with a gain of at least \$10{,}000 earn more than \$50K, and all 244 at the cap do. The variable is most likely derived from income, so we dropped \code{capital-gain} and \code{capital-loss}. Our scores are therefore not comparable with published ones (0.92--0.93 ROC-AUC), which use them \cite{chakrabarty2018}.
 
-\paragraph{Columns kept out.} \code{education} duplicates \code{education-num}; \code{fnlwgt} is a sampling weight, not a trait (medians 178{,}811 vs 176{,}729 by class); \code{relationship} reveals sex (all 19{,}716 Husbands and 2{,}331 Wives are married). \code{sex}, \code{race} and \code{native-country} are protected characteristics, kept only for the audit. Six inputs remain: \code{age}, \code{workclass}, \code{education-num}, \code{marital-status}, \code{occupation}, \code{hours-per-week}. The strongest signals are marital status (44.6\% of married people earn more than \$50K vs 4.5--10.1\% for the other statuses), occupation, education (15.9\% at level 9, 41.3\% at 13, 74.0\% at 15), work class and age.
+\paragraph{Inputs and sensitive attributes.} We also dropped \code{education} (a copy of \code{education-num}), \code{fnlwgt} (a sampling weight) and \code{relationship}, which reveals sex through Husband and Wife. \code{sex}, \code{race} and \code{native-country} are kept for the audit only. Six inputs remain: \code{age}, \code{workclass}, \code{education-num}, \code{marital-status}, \code{occupation} and \code{hours-per-week}.
 
-\paragraph{Where the gender gap lives.} 30.4\% of men vs 10.9\% of women earn more than \$50K. Figure~\ref{fig:gap} shows that among married people the rates are equal (44.8\% vs 44.6\%), but 60.9\% of men are married vs 15.3\% of women, and gaps remain within education and hours groups. Occupations differ too (25.3\% of women in administrative jobs vs 5.9\% of men; 2.2\% vs 18.6\% in craft and repair), and women work 36.4 hours on average vs 42.4 for men. Leaving \code{sex} out therefore does not make a model blind to it: its inputs are proxies (``fairness through unawareness'' fails, Session~9). These are descriptive associations, not causes. The split keeps enough people per sex to audit (356 high-earning women in the test set), but two race groups have fewer than 100 people in the test set and can only be described.
+\paragraph{Where the gender gap lives.} 30.4\% of men and 10.9\% of women earn more than \$50K. Among married people the rates are equal (44.8\% of women, 44.6\% of men), but 60.9\% of men are married against 15.3\% of women (Figure~\ref{fig:gap}). Women also work fewer hours (36.4 against 42.4 on average) and in different occupations. Leaving \code{sex} out therefore does not make a model blind to it: its inputs are proxies \cite{besse2022}. These are associations, not causes.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.78\textwidth]{figures/eda_gap.pdf}
-\caption{Share earning $>$ \$50K, women vs men, overall and within groups (EDA). Married women and men have the same rate; the overall gap comes largely from who is married, plus gaps within education and hours groups.}
+\includegraphics[width=0.66\textwidth]{eda_gap.pdf}
+\caption{Share earning more than \$50K, women and men, overall and within groups (development set). Married women and men earn alike; the overall gap comes largely from who is married, plus gaps within education and hours groups.}
 \label{fig:gap}
 \end{figure}
 
-% ---------------------------------------------------------------
-\section{Feature engineering and the Pipeline}
+\paragraph{Feature engineering.} A linear model cannot draw a curve or a regime from one column, so we added five fixed rules, each backed by a pattern in the development set (share earning at most \$50K): \code{is\_married} (55.5\% against 93.6\% for everyone else); \code{has\_degree}, \code{education-num} $\geq 13$ (52.0\% against 83.9\%); \code{part\_time} ($<35$ h, about 93\%) and \code{overtime} ($>40$ h, 56--65\%, against 78.7\% at 40 h), a signal hidden by both medians being 40 h; and \code{age\_squared} for the rise and fall with age (98.9\% at 24 or younger, 60.6\% at 45--54, 79.6\% at 65 and over).
 
-Each engineered feature is a fixed rule justified by an EDA pattern (share earning $\leq$ \$50K in the development set):
-\begin{itemize}
-\item \code{is\_married}: married 55.5\% vs everyone else 93.6\%;
-\item \code{has\_degree} (\code{education-num} $\geq$ 13, a bachelor's degree or more): 52.0\% vs 83.9\%;
-\item \code{part\_time} ($<$ 35 h) and \code{overtime} ($>$ 40 h): about 93\% below 35 h, 78.7\% at 40 h, 56--65\% above 40 h. Both medians are 40 h, which had hidden this signal in the first EDA;
-\item \code{age\_squared}: income rises with age, then falls (98.9\% at 24 or younger, 60.6\% at 45--54, 79.6\% at 65+), a U-shape a linear model cannot draw from \code{age} alone.
-\end{itemize}
-The Pipeline (\code{build\_pipeline(model)}) chains a \code{FunctionTransformer} that adds these features, a \code{ColumnTransformer} and the model. Numbers are imputed with the training median (the most neutral choice) and standardized; categories get ``Unknown'' then one-hot encoding with \code{handle\_unknown="ignore"}, so a category absent from a training fold does not crash; the binary features pass through. Six inputs become 37 columns (32 without the engineered features). One-hot encoding avoids inventing an order between categories; scaling matters for the regularized logistic regression and changes nothing for trees. The features lift logistic regression from 0.688 to 0.708 PR-AUC; the tree models find the same patterns by themselves (Table~\ref{tab:models}).
+\paragraph{The Pipeline.} \code{build\_pipeline(model)} chains the feature rules, a \code{ColumnTransformer} and the model. Numbers are imputed with the training median and standardised; categories get an explicit ``Unknown'' level, which keeps the fact that the value was missing, then one-hot encoding with \code{handle\_unknown="ignore"}; the binary features pass through. Six inputs become 37 columns. The engineered features raise logistic regression from 0.6880 to 0.7082 PR-AUC and leave LightGBM unchanged (0.7155), since trees find these patterns by themselves.
 
 % ---------------------------------------------------------------
 \section{Class imbalance}
+\label{sec:imbalance}
 
-The positive class is 23.9\% of people. We tested class weighting as the course suggests, as a hyperparameter: \code{class\_weight="balanced"} for logistic regression and the random forest, \code{scale\_pos\_weight} for LightGBM. Weighting never improved the ranking and always degraded the probabilities (Table~\ref{tab:imbalance}). Session~6 notes that weights help when a model underfits the rare class; ours do not. We therefore do not re-weight: the imbalance will be handled by the \textbf{decision threshold}, chosen at the decision stage, which leaves the probabilities intact \todo{threshold choice, with the fairness audit}. We did not use SMOTE: half of our inputs are categorical, a case where interpolating between people is undefined. In the code, weights are part of the Optuna search spaces (\code{tuning/tune.py}).
+The positive class is 23.9\% of people. Beyond choosing PR-AUC, we tested re-weighting as a hyperparameter of each model: \code{class\_weight="balanced"} for logistic regression and the random forest, \code{scale\_pos\_weight} for LightGBM. Weights were part of the first Optuna search spaces (\code{tuning/tune.py}, git tag \code{baseline-v1}) and were then isolated with one validation curve per model. Re-weighting never improved the ranking and always degraded the probabilities (Table~\ref{tab:imbalance}). This is what theory predicts: if every positive gets weight $w$, the best-fitting probability becomes
+\begin{equation}
+p_w = \frac{w\,p}{w\,p + 1 - p},
+\end{equation}
+an increasing function of the true probability $p$. People keep their order, so the ranking metrics do not move, but every probability is pushed up. The first tuning confirms it: Optuna chose no weights for logistic regression and a mild one for LightGBM (1.32), while the forest that chose balanced weights had the worst probabilities of the three (Brier 0.1365). We therefore do not re-weight. The imbalance is handled at the decision step, with a threshold below 0.5 chosen on the development set (0.343, the best-F1 point, Section~\ref{sec:test}). We did not try SMOTE: half of our inputs are categorical, and interpolating between two people's occupations has no meaning.
 
 \begin{table}[H]
 \centering\small
-\begin{tabular}{@{}lccc@{}}
+\begin{tabular}{@{}llcc@{}}
 \toprule
-Model (5-fold CV, development set) & PR-AUC & ROC-AUC & Brier \\
+Model (5-fold CV, other settings at defaults) & Weighting & PR-AUC & Brier \\
 \midrule
-Logistic regression, no weights (base features) & 0.688 & 0.883 & 0.114 \\
-Logistic regression, balanced weights (base features) & 0.684 & 0.883 & 0.143 \\
-LightGBM defaults, no weights & 0.716 & 0.892 & 0.110 \\
-LightGBM defaults, balanced weights & 0.716 & 0.892 & 0.137 \\
-Random forest (200 trees, sklearn defaults), no weights & 0.642 & 0.859 & 0.130 \\
-Random forest (200 trees, sklearn defaults), balanced weights & 0.628 & 0.859 & 0.145 \\
+Logistic regression ($C=1$) & none / balanced & 0.7083 / 0.7063 & 0.1113 / 0.1397 \\
+Random forest (200 trees) & none / balanced & 0.6421 / 0.6282 & 0.1303 / 0.1446 \\
+LightGBM & \code{scale\_pos\_weight} 1 / 3.2 & 0.7155 / 0.7160 & 0.1101 / 0.1378 \\
 \bottomrule
 \end{tabular}
-\caption{Class weights leave the ranking unchanged or worse and degrade the probabilities (higher Brier score).}
+\caption{Re-weighting the positive class leaves the ranking unchanged or worse and damages the probabilities. 3.2 is the ratio of negatives to positives.}
 \label{tab:imbalance}
 \end{table}
 
 % ---------------------------------------------------------------
-\section{Modelling progression}
+\section{Models, diagnosis and tuning}
+\label{sec:models}
 
-Table~\ref{tab:models} compares the course progression on the same folds and metrics, all with default settings. The fold-to-fold standard deviation of PR-AUC is about 0.013, so smaller differences are not real.
+We compared three families of increasing flexibility on the same folds and metrics. For each one we first diagnosed overfitting or underfitting from the gap between training and validation scores, then drew validation curves (one setting changes, the others stay fixed), and only then tuned.
 
-\begin{table}[H]
-\centering\small
-\begin{tabular}{@{}lcccc@{}}
-\toprule
-Model (engineered features, default settings) & PR-AUC & ROC-AUC & Brier & Recall at best F1 \\
-\midrule
-Dummy (predicts the prior) & 0.239 & 0.500 & 0.182 & -- \\
-Logistic regression & 0.708 $\pm$ 0.014 & 0.889 $\pm$ 0.006 & 0.111 & 0.762 \\
-Random forest (300 trees, leaf 5) & 0.711 $\pm$ 0.013 & 0.890 $\pm$ 0.005 & 0.111 & 0.787 \\
-LightGBM \cite{ke2017} & 0.716 $\pm$ 0.012 & 0.892 $\pm$ 0.005 & 0.110 & 0.778 \\
-\bottomrule
-\end{tabular}
-\caption{Model progression, 5-fold CV on the development set (mean $\pm$ std over folds). Recall at the best-F1 threshold, pooled out of fold (slightly optimistic, for comparison only).}
-\label{tab:models}
-\end{table}
+\paragraph{Logistic regression.} The model predicts $\hat p = \sigma(w^\top x + b)$ with $\sigma(z) = 1/(1+e^{-z})$, and training minimises the penalised log-loss
+\begin{equation}
+C \sum_{i=1}^{n} \Big[-y_i \log \hat p_i - (1-y_i)\log(1-\hat p_i)\Big] + \Omega(w), \qquad
+\Omega(w) = \tfrac12\lVert w\rVert_2^2 \ \text{(L2)} \ \text{or}\ \lVert w\rVert_1 \ \text{(L1)},
+\end{equation}
+so $C = 1/\lambda$: a small $C$ is a strong penalty. The gap between training and validation PR-AUC is 0.0014, about ten times smaller than the fold-to-fold noise, so the model does not overfit. Its training score is itself only 0.710: a small gap with a mediocre score is underfitting (bias). The validation curves agree (Figure~\ref{fig:curves}a): from $C=0.3$ to 100 the score is flat at 0.708 for both penalties, while a strong penalty only adds bias ($C=0.01$: 0.698 with L2, 0.682 with L1; L1 at $C=10^{-4}$ sets every weight to zero and becomes the Dummy). Elastic Net never beat pure L2. Since regularisation can only add bias, the remedy is new information: the engineered features added 0.020. Among three interactions tested with a rule fixed beforehand (a gain of at least 0.001 in at least 4 of 5 folds), only marital status $\times$ hours passed (+0.0016, better in all 5 folds). We did not add it, because it combines two proxies for sex.
 
-\textbf{What each step bought.} Logistic regression (Session~2) captures almost all the signal: +0.47 PR-AUC over the Dummy. The random forest (Session~4, bagging) and LightGBM (boosting) add 0.003 and 0.008, within the noise. Three families with very different capacity reaching the same level suggest the limit is the \emph{information} in six inputs, not the model. The progression is still useful: it rules out that a more flexible model behaves very differently, and it keeps a transparent benchmark (logistic regression, whose coefficients expose the proxies) next to the stronger models.
+\paragraph{Random forest.} Each tree splits greedily on the impurity of its nodes, and a fully grown tree memorises: one tree reaches 0.977 PR-AUC on its training folds and 0.444 on validation. Averaging 100 such trees (scikit-learn defaults) gives 0.639, still with a gap of 0.333, because the trees remain fully grown. Limiting growth is what fixes it (Figure~\ref{fig:curves}b): with at least 10 people per leaf, validation reaches 0.714 with a gap of 0.051; at 100 people per leaf the gap almost closes (0.008) but validation drops to 0.705, the start of underfitting. Depth tells the same story (depth 4: 0.684 with a gap of 0.004). Smaller bootstrap samples also help (30\% of people per tree: 0.685 against 0.642), while more than 200 trees changes nothing.
 
-% ---------------------------------------------------------------
-\section{Hyperparameter tuning and experiment tracking}
-\label{sec:tuning}
-
-\paragraph{Tuning v1.} One Optuna study per model \cite{akiba2019} (TPE sampler, seed 42, 25 trials each), objective = mean 5-fold PR-AUC of the complete Pipeline, so every trial is cross-validated and the test set is never used. Class weighting was part of each search space. Logistic regression reached 0.708 $\pm$ 0.014 (C = 5.18, L2 penalty, no class weights), no gain over its default. The random forest reached 0.715 $\pm$ 0.014 (300 trees, depth 15, leaf 10, \code{log2} columns, \code{balanced\_subsample} weights), +0.004 over its baseline but with a worse Brier score (0.136 vs 0.111). The best trial is selected on the same folds it is scored on, so these scores are slightly optimistic (Session~5).
-
-\paragraph{Diagnosis before tuning (random forest).} A random forest does not minimize a global loss: each tree picks, node by node, the split that most reduces impurity (Gini or entropy). One fully grown tree memorizes: 0.977 train vs 0.444 validation PR-AUC. Bagging 100 such trees (sklearn defaults) reaches 0.639 but keeps a 0.33 train--validation gap; requiring 5 people per leaf brings validation to 0.711 with a 0.09 gap. We then drew one validation curve per course hyperparameter, changing one setting while the others stay at sklearn defaults (Figure~\ref{fig:rf}). Growth limits matter most: \code{min\_samples\_leaf} peaks at 10 (0.714, plateau 5--20), \code{max\_depth} at 12 (0.713), with depth 4 underfitting (0.684 with a 0.004 gap) and unlimited depth overfitting; \code{min\_samples\_split} plateaus at 50--200. Smaller bootstrap samples help (\code{max\_samples} 30\%: 0.685 vs 0.642). Gini and entropy are identical (0.642); more than 200 trees changes nothing and never closes the gap; class weights lower PR-AUC and raise the Brier score (0.130 $\to$ 0.145).
+\paragraph{LightGBM.} Boosting adds trees one after another, each correcting the current errors: $F_m(x) = F_{m-1}(x) + \eta\, h_m(x)$, with learning rate $\eta$ \cite{ke2017}. The rate and the number of trees therefore act together (Figure~\ref{fig:curves}c). The best validation scores sit where $\eta$ times the number of trees is about 5 to 8 (0.7170 at $\eta=0.03$ with 200 trees, 0.7163 at $\eta=0.01$ with 800), and more steps overfit (0.672 at $\eta=0.1$ with 1{,}600 trees, gap 0.244). Unlike the forest, boosting can overfit by adding trees. The defaults already sit near the top (0.7155, gap 0.042): mild variance.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/rf_curves.pdf}
-\caption{Random forest validation curves (5-fold CV, 200 trees, other settings at sklearn defaults; error bars = fold std). Left: the bias--variance picture, from memorizing (leaf 1) to underfitting (leaf 100). Centre: depth 4 underfits, unlimited depth overfits. Right: smaller samples per tree reduce overfitting.}
-\label{fig:rf}
+\includegraphics[width=\textwidth]{validation_curves.pdf}
+\caption{Validation curves, 5-fold CV on the development set; error bars are fold standard deviations. (a) Logistic regression: the training curve lies on the validation curve (no variance); a strong penalty underfits. (b) Random forest: from memorising (leaf 1) to underfitting (leaf 100). (c) LightGBM: too many boosting steps overfit, sooner at higher rates.}
+\label{fig:curves}
 \end{figure}
 
-\paragraph{Tuning v2 (random forest).} Each choice of the v2 search space comes from a curve: settings with no or a harmful effect are fixed (300 trees, Gini, no class weights); each searched range is a plateau plus a margin (leaf 5--30, depth 8--20, split 2--200, \code{max\_samples} 30--100\%, \code{max\_features} in \{sqrt, log2, 0.3\}). Objective, budget and seed are those of v1, so the only difference is the search space. A full grid over these settings would need thousands of combinations; Optuna's first 10 trials are random search, then its TPE sampler concentrates on promising regions (Session~5). All 25 trials scored between 0.709 and 0.715: the space lies on the plateau, and the guided trials added 0.0005 over the random ones. The settings interact: alone the best leaf size was 10, but with 39\% of people per tree Optuna prefers leaf 6.
+\paragraph{Tuning with Optuna.} Each model was tuned in one Optuna study \cite{akiba2019}: TPE sampler, seed 42, 25 trials, objective the mean 5-fold validation PR-AUC of the whole Pipeline. The first 10 trials are random, then TPE samples where earlier trials scored well. A first tuning (v1) used wide spaces that included class weights. For v2 we rebuilt each space from the validation curves: settings with no effect or a harmful one were fixed (no class weights for any model; 300 trees and Gini for the forest), and each searched range is the plateau of its curve plus a margin. The best v2 settings are listed in Appendix~\ref{app:params}.
 
 \begin{table}[H]
-\centering\small
-\begin{tabular}{@{}lccccc@{}}
+\centering\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lccccc|ccc@{}}
 \toprule
-Random forest & Train PR-AUC & Val.\ PR-AUC & Gap & Val.\ ROC-AUC & Val.\ Brier \\
+& \multicolumn{5}{c|}{Development set, 5-fold CV} & \multicolumn{3}{c}{Test set, once} \\
+& Untuned & \multicolumn{4}{c|}{Tuned v2} & & & \\
+\cmidrule(lr){2-2}\cmidrule(lr){3-6}
+Model & PR-AUC & Train & Val. & Gap & Brier & PR-AUC [95\% CI] & ROC-AUC & Brier \\
 \midrule
-One tree, fully grown & 0.977 & 0.444 & 0.533 & 0.734 & 0.196 \\
-sklearn defaults (100 trees, leaf 1) & 0.972 & 0.639 & 0.333 & 0.857 & 0.131 \\
-Baseline (300 trees, leaf 5) & 0.803 & 0.711 & 0.092 & 0.890 & 0.111 \\
-Tuned v1 (Optuna, 25 trials) & 0.749 & 0.715 & 0.035 & 0.891 & 0.136 \\
-\textbf{Tuned v2} (space from the curves) & 0.754 & \textbf{0.715} & 0.039 & 0.891 & \textbf{0.110} \\
+Dummy (prior) & 0.2394 & -- & -- & -- & 0.1821 & 0.2394 & 0.5000 & 0.1821 \\
+Logistic regression & 0.7082 & 0.7097 & 0.7083 & 0.0014 & 0.1113 & 0.7041 [0.684, 0.724] & 0.8895 & 0.1115 \\
+Random forest & 0.7110 & 0.7536 & 0.7149 & 0.0386 & 0.1104 & 0.7140 [0.696, 0.733] & 0.8926 & 0.1100 \\
+\textbf{LightGBM} (final) & 0.7155 & 0.7341 & 0.7189 & 0.0152 & 0.1096 & \textbf{0.7148} [0.696, 0.732] & \textbf{0.8945} & \textbf{0.1092} \\
 \bottomrule
 \end{tabular}
-\caption{Random forest, same 5 folds. v2 keeps v1's ranking with a small gap and trustworthy probabilities (best: leaf 6, depth 16, split 10, 39\% of people per tree, sqrt columns).}
-\label{tab:rf}
+\caption{The model progression with the same metrics. Untuned: logistic regression with $C=1$, random forest with 300 trees and 5 people per leaf, LightGBM defaults. The fold standard deviation of validation PR-AUC is 0.011--0.013 (population formula). Test intervals: 1{,}000 bootstrap resamples of people.}
+\label{tab:models}
 \end{table}
 
-\paragraph{Logistic regression.} Tuning v1 is the only tuning so far; no validation-curve diagnosis has been run for it \todo{Soumaya: logistic regression diagnosis / v2, if done}.
+\paragraph{What each step bought.} Logistic regression captures almost all the signal: 0.47 PR-AUC above the Dummy (Table~\ref{tab:models}). The forest and LightGBM add 0.003 and 0.007 untuned, less than the fold noise. Tuning v2 kept the ranking of v1 for all three models and left most of the gain elsewhere: smaller train-validation gaps and better probabilities (forest Brier 0.1365 with v1's class weights against 0.1104; LightGBM 0.1112 against 0.1096). In the v2 studies of our tracking store, 22, 20 and 21 of the 25 trials (logistic regression, forest, LightGBM) landed within 0.002 of the best one (Appendix~\ref{app:mlflow}), so once the space was right the search method mattered little. Three families of very different flexibility stopping at the same level point to the same conclusion: the ceiling is the information in six inputs, not the model. Re-running the forest's v2 study on another machine illustrates this plateau: the 10 random trials reproduced the same best score (0.7144), and the guided trials then reached 0.7146 with different settings (0.7149 in the original run).
 
-\paragraph{LightGBM.} \todo{Hadiqa: LightGBM diagnosis and tuning (\code{tuning/lightgbm.py}).}
+\paragraph{Experiment tracking.} Every study is logged in MLflow \cite{zaharia2018} as a parent run (model, version, budget, objective, CV scheme, best parameters and scores, optimisation-history figure) with one nested run per trial (hyperparameters, mean and standard deviation of PR-AUC and ROC-AUC, Brier score, per-fold metrics as an artifact). Calibration, fairness and SHAP runs log their metrics, figures and result files. Our tracking store holds 164 runs: 150 trials, 6 studies (v1 and v2 for three models) and 8 evaluation runs (Appendix~\ref{app:mlflow}).
 
-\paragraph{Experiment tracking.} Every Optuna study is a parent MLflow run (model, version, budget, objective, CV scheme, best parameters and scores, optimization-history figure) with one nested run per trial (its hyperparameters, mean and standard deviation of PR-AUC and ROC-AUC, Brier score, per-fold metrics). Tuning v1 produced 78 runs (3 parents + 75 trials) and the random forest v2 26 more. Runs are stored in a local SQLite file; the best parameters of each version are versioned in Git (\code{tuning/results/<version>/}). \todo{MLflow screenshot, Appendix~\ref{app:mlflow}}
+% ---------------------------------------------------------------
+\section{Final evaluation on the test set}
+\label{sec:test}
+
+Every choice was frozen on the development set: the v2 parameters, the decision thresholds, the calibrator and the mitigation. Each model was refitted on the 39{,}032 development people and the 9{,}758 test people were scored once. The development score of LightGBM was slightly optimistic, as expected from choosing the best trial on the same folds: 0.7183 out-of-fold against 0.7148 on the test set. On the same test people, LightGBM beats logistic regression (PR-AUC $+0.0107$, 95\% interval $[+0.0053, +0.0160]$; Brier $-0.0023$, $[-0.0030, -0.0014]$) and ties the random forest on ranking ($+0.0008$, $[-0.0038, +0.0050]$) while giving slightly better probabilities (Brier $-0.0007$, $[-0.0013, -0.00001]$). We keep \textbf{LightGBM v2} as the final model and logistic regression as the transparent benchmark. At the best-F1 threshold fixed on the development set (0.343), the final model reaches a precision of 0.604 and a recall of 0.752 on the test set (F1 0.670). A client with a different cost of errors would choose another threshold.
 
 % ---------------------------------------------------------------
 \section{Calibration}
 \label{sec:calib}
-\todo{reliability curve, Brier score and ECE of the final model; over- or under-confident; whether its probabilities can be trusted as-is}
 
-\section{Explainability with SHAP}
-\todo{global importance and local explanations of the final model; do the important features make business sense; proxy check by sex}
+A score is calibrated if, among people who receive about 0.3, about 30\% are high earners. We measure it with the Brier score and the expected calibration error over 10 equal-frequency bins $b$:
+\begin{equation}
+\mathrm{Brier} = \frac1n \sum_{i=1}^{n} (\hat p_i - y_i)^2, \qquad
+\mathrm{ECE} = \sum_{b} \frac{n_b}{n}\,\big|\,\bar y_b - \bar p_b\,\big| ,
+\end{equation}
+where $\bar y_b$ and $\bar p_b$ are the observed rate and the mean prediction in bin $b$. The first tuning taught us what breaks calibration: with balanced class weights the random forest said 0.912 for people of whom 81.1\% were high earners (ECE 0.132), and LightGBM with \code{scale\_pos\_weight} 1.32 was mildly over-confident (ECE 0.030). Without weights, the v2 models are calibrated as they come out of training (out-of-fold ECE: logistic regression 0.0059, forest 0.0109, LightGBM 0.0058). Platt scaling, $\hat p' = \sigma(A\,s + B)$ with $s$ the log-odds score \cite{platt1999}, changes nothing for LightGBM v2 (ECE 0.0057), and isotonic regression reaches 0.0010 but its step function creates ties and lowers PR-AUC from 0.7183 to 0.7135.
 
-\section{Fairness and bias audit}
-\label{sec:fair}
-\todo{metrics by sex (selection rate, TPR, FPR, precision) against the definitions of Section 1; one mitigation; performance and fairness gaps before / after on the untouched test set}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{test_calibration.png}
+\caption{Reliability of the final model on the test set: raw and Platt probabilities (left), and by sex (centre: raw, right: Platt). Each point is a bin of people.}
+\label{fig:calib}
+\end{figure}
 
-\section{Final evaluation on the test set}
-\label{sec:test}
-\todo{final model, evaluated once on the 9{,}758 test people}
+On the test set (Figure~\ref{fig:calib}) the final model has a Brier score of 0.1092 and an ECE of 0.0091. Its mean prediction is 0.2401 for an observed rate of 0.2394; for women 0.113 against 0.109, for men 0.304 against 0.305. The curve shows no systematic over- or under-confidence: the top decile is predicted at 0.814 for 0.803 observed, and the highest-scored women are slightly under-predicted (0.581 against 0.592), deviations of the size of the noise in bins of about 326 women. We would trust these probabilities as they are for a downstream decision, for both sexes, without recalibration.
 
 % ---------------------------------------------------------------
-\section{Limitations and conclusion so far}
+\section{Explainability with SHAP}
+\label{sec:shap}
 
-\begin{itemize}
-\item \textbf{Data.} A 1994 US snapshot, with sex recorded as binary and an arbitrary \$50K threshold that limits its value as a fairness benchmark \cite{ding2021}. Results describe this population, not today's.
-\item \textbf{Ceiling.} Six legitimate inputs carry about 0.71 PR-AUC of signal; we removed stronger but leaking or sex-revealing columns on purpose. More tuning does not raise this level; only new legitimate information could.
-\item \textbf{Optimism.} Tuned scores are selected on the same folds they are scored on; the test evaluation will give the honest figure.
-\end{itemize}
+SHAP splits each prediction into one contribution per column \cite{lundberg2017}. For the final model the split is exact in log-odds:
+\begin{equation}
+f(x) = \phi_0 + \sum_{j} \phi_j(x),
+\end{equation}
+where $f(x)$ is the score, $\phi_0$ the average score and $\phi_j(x)$ the contribution of column $j$. Contributions add up, so the columns built from one input (its one-hot categories and its engineered features) can be summed into one contribution per input. We used TreeSHAP out-of-fold on the development set: each person is explained by the fold model that never saw them.
 
-So far, the model is as good as the six inputs allow: three model families and two tunings of the random forest reach the same level, and the random forest's tuning v2 shows how a search space read from validation curves keeps that ranking with trustworthy probabilities. The EDA shows that the inputs are strong proxies for sex; the next stages test whether the model reproduces the income gap between women and men, and what reducing it costs. \todo{final conclusion}
+\paragraph{Global importance.} The mean absolute contribution ranks marital status first (1.20 in log-odds), then age (0.74), education (0.52), hours (0.35), occupation (0.34) and work class (0.08). This makes business sense and matches the data analysis: marriage pools household income, age and education stand for experience and qualification, and hours and occupation set pay. No input with an implausible effect appears.
+
+\paragraph{Where the score gap between women and men comes from.} The mean score is $-3.304$ for women and $-1.650$ for men. Because SHAP is additive, the gap of $-1.654$ splits exactly into one part per input (Figure~\ref{fig:shapsex}): marital status $-1.089$ (66\%), hours $-0.239$ (14\%), age $-0.225$ (14\%), then occupation, education and work class (5\% together). Education matters overall but hardly separates women from men. For the same value of an input the effect is about the same for both sexes, so the gap comes from the different values the two groups have, not from a different treatment of the same value. The test set gives the same split (marital status 65\% of a gap of $-1.671$). This confirms our hypothesis on the model itself.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{shap_by_sex_dev.png}
+\caption{Mean SHAP contribution of each input for women and men (left) and its share of the score gap (right), out-of-fold, development set. The model never sees sex.}
+\label{fig:shapsex}
+\end{figure}
+
+\paragraph{Local explanations.} To avoid picking convenient examples, we explained the person with the median score in each of the four outcomes at the 0.343 threshold (Figure~\ref{fig:shaplocal}). The false positive is a married woman with 9 years of education in a managerial job, flagged at 0.51 mostly because she is married (+1.42). The false negative is a divorced woman in a managerial job who works 60 hours and earns more than \$50K; being divorced ($-0.88$) cancels her long hours (+0.88) and she is scored 0.20. In both errors marital status, the strongest proxy for sex, decides the outcome.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{shap_local_dev.png}
+\caption{Local SHAP explanations of four people, chosen by rule (median score of each outcome at the 0.343 threshold), out-of-fold, development set. Each bar moves the score from the average (dotted) towards the final score (triangle); the dashed line is the threshold.}
+\label{fig:shaplocal}
+\end{figure}
+
+We did not remove marital status. It is the strongest legitimate signal (married women and men earn alike), and the other inputs differ by sex too, so removing it would partly move the proxy effect to them. We handle the bias at the decision step instead.
+
+% ---------------------------------------------------------------
+\section{Fairness audit and mitigation}
+\label{sec:fair}
+
+\paragraph{Metrics.} For group $g$ (women, men), decision $\hat Y$ and outcome $Y$, the selection rate is $\mathrm{SR}_g = P(\hat Y = 1 \mid g)$, the true-positive rate $\mathrm{TPR}_g = P(\hat Y = 1 \mid Y = 1, g)$, the false-positive rate $\mathrm{FPR}_g = P(\hat Y = 1 \mid Y = 0, g)$ and the precision $\mathrm{PPV}_g = P(Y = 1 \mid \hat Y = 1, g)$. We report
+\begin{equation}
+\text{EO gap} = \max\big(|\mathrm{TPR}_w - \mathrm{TPR}_m|,\ |\mathrm{FPR}_w - \mathrm{FPR}_m|\big),
+\qquad
+\text{four-fifths ratio} = \frac{\mathrm{SR}_w}{\mathrm{SR}_m} \ \ (\text{screen: } \geq 0.8).
+\end{equation}
+Equalized odds asks for an EO gap of 0, demographic parity for equal selection rates and predictive parity for equal precision. Intervals come from bootstrap resamples of test people.
+
+\paragraph{Before mitigation.} At the single threshold of 0.343, the final model finds 57.0\% of high-earning women against 78.5\% of high-earning men (TPR gap $-0.215$, 95\% interval $[-0.272, -0.164]$). It wrongly flags 5.4\% of lower-earning women against 22.0\% of men, and selects 11.0\% of women against 39.2\% of men, a four-fifths ratio of 0.282 $[0.253, 0.309]$. A flag means almost the same for both (precision 0.564 against 0.610). So equalized odds and the four-fifths rule fail while predictive parity roughly holds, the same picture as on the development set (TPR gap $-0.194$, ratio 0.274). The base rates differ (10.9\% of women and 30.5\% of men in the test set), and the model reproduces this gap through its proxies (Section~\ref{sec:shap}).
+
+\paragraph{Mitigation.} We applied one post-processing technique, Fairlearn's \code{ThresholdOptimizer} \cite{weerts2023}, which picks one threshold per sex (randomising between two thresholds where needed) to maximise balanced accuracy under an equalized-odds constraint. It was fitted on the development out-of-fold scores (after Platt scaling, which changes nothing for this model, Section~\ref{sec:calib}) and applied once to the test set. We compare it with the single threshold that maximises the same objective (0.208).
+
+\begin{table}[H]
+\centering\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Decision rule (test set) & Bal.\ acc. & F1 & TPR gap & FPR gap & EO gap & PPV gap & Four-fifths \\
+\midrule
+One threshold (best F1, 0.343) & 0.799 & 0.670 & $-0.215$ & $-0.166$ & 0.215 & $-0.046$ & 0.282 \\
+One threshold (best bal.\ acc., 0.208) & 0.814 & 0.659 & $-0.140$ & $-0.222$ & 0.222 & $-0.082$ & 0.356 \\
+\textbf{Equalized odds} (per-sex thresholds) & 0.785 & 0.627 & $+0.004$ & $+0.003$ & \textbf{0.004} & $-0.304$ & 0.745 \\
+Equal opportunity (per-sex thresholds) & 0.809 & 0.658 & $+0.003$ & $-0.111$ & 0.111 & $-0.183$ & 0.528 \\
+Demographic parity (per-sex thresholds) & 0.775 & 0.614 & $+0.137$ & $+0.100$ & 0.137 & $-0.349$ & 0.983 \\
+\bottomrule
+\end{tabular}
+\caption{Fairness by sex on the test set (gaps are women minus men), with every rule fixed on the development set. Equalized odds is our chosen mitigation; the last two rows are a sensitivity check.}
+\label{tab:fair}
+\end{table}
+
+\paragraph{After mitigation.} Equalized odds closes both error-rate gaps on new people: TPR gap $+0.004$ $[-0.042, +0.047]$ and FPR gap $+0.003$ $[-0.017, +0.024]$ (Table~\ref{tab:fair}). It gets there by flagging more women (selection 17.9\% to 31.6\%, FPR 10.8\% to 25.4\%) and fewer men (50.2\% to 42.5\%, FPR 33.1\% to 25.1\%) (Figure~\ref{fig:fair}). The cost is 0.029 of balanced accuracy (0.814 to 0.785), with precision falling from 0.530 to 0.507 and recall from 0.872 to 0.822. The four-fifths ratio rises from 0.356 to 0.745 $[0.702, 0.793]$ but still fails, and a flag now means much less for a woman than for a man (precision 0.285 against 0.589).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{test_fairness_by_sex.png}
+\caption{Women and men under each decision rule, test set. ``One threshold (before)'' is the single threshold that maximises balanced accuracy (0.208), the same objective as the per-sex thresholds.}
+\label{fig:fair}
+\end{figure}
+
+\paragraph{The definitions conflict.} Enforcing equal opportunity instead keeps the TPR gap at $+0.003$ but leaves an FPR gap of $-0.111$. Demographic parity passes the four-fifths screen (0.983) but opens a TPR gap of $+0.137$ and a precision gap of $-0.349$. When base rates differ, no rule can equalise selection rates, error rates and precision at once \cite{kleinberg2017}. We keep equalized odds, as decided before the audit, and state plainly that it fails the legal screen.
+
+\paragraph{Race.} At the same threshold, Black people are selected less often than White people (13.2\% against 31.6\%), with a lower TPR (0.722 against 0.754) and FPR (0.061 against 0.167), for base rates of 10.8\% and 25.3\%. The other groups have between 80 and 311 people in the test set, too few for reliable rates. Only sex was mitigated.
+
+% ---------------------------------------------------------------
+\section{Limitations and conclusion}
+
+The data is a 1994 US snapshot with sex recorded as binary and an arbitrary \$50K threshold, which limits its value as a fairness benchmark \cite{ding2021}. Six legitimate inputs carry about 0.71 PR-AUC; we gave up stronger but leaking or sex-revealing columns on purpose. Cross-validated scores of tuned models are optimistic (0.0035 PR-AUC here); nested cross-validation would have measured this without the test set. One test set of 9{,}758 people leaves an uncertainty of about $\pm 0.02$ PR-AUC per model, which is why we compared models with paired intervals. The mitigation needs sex at decision time and randomises some decisions, which some legal contexts do not allow; an in-processing method that needs sex only for training is the next thing to test, along with client-specific thresholds.
+
+Our model is as good as its inputs allow and its probabilities can be trusted for women and men. It still treats them differently, and the reason is visible: marital status and hours, two proxies for sex, carry most of the score gap. Post-processing can equalise error rates, but it costs accuracy, makes a flag less informative for women and still fails the four-fifths rule. Which definition of fairness to enforce is a policy choice for the client, and an audit should report all of them.
 
 % ---------------------------------------------------------------
 \section*{Contribution statement}
@@ -223,31 +271,68 @@ So far, the model is as good as the six inputs allow: three model families and t
 \toprule
 Member & Contributions \\
 \midrule
-Manel Rahali & GitHub repository and branch workflow; EDA (data integrity, types, outliers, rare categories, features vs target, leakage audit, cleaning and split, preview of the transformed data); \code{src/data.py}; preprocessing in \code{src/pipeline.py}; project architecture (\code{src/} library, \code{tuning/} scripts); random forest diagnosis, validation curves and tuning v2; README; report coordination. \\
-Soumaya Atoui & Business case and target orientation; feature engineering; EDA steps on groups, proxies and framing; baseline progression, Optuna tuning v1 and MLflow tracking; calibration and fairness scripts; findings log \todo{confirm}. \\
-Hadiqa Javaid & LightGBM diagnosis and tuning \todo{complete}. \\
+Manel Rahali & GitHub repository and branch workflow; exploratory analysis (integrity, types, outliers, rare categories, features against target, leakage audit, cleaning and split); \code{src/data.py}; preprocessing in \code{src/pipeline.py}; project architecture; random forest diagnosis, validation curves and tuning v2; README; first draft of the report. \\
+Soumaya Atoui & Business case and target orientation; feature engineering; analysis of groups and proxies; baseline progression; Optuna tuning v1 and MLflow tracking; first calibration and fairness audit scripts; findings log; logistic regression diagnosis (validation curves, Lasso and Elastic Net, interactions); local SHAP explanations; final report. \\
+Hadiqa Javaid & LightGBM diagnosis, validation curves and tuning v2; logistic regression tuning v2; calibration and fairness audit of the v2 models; global SHAP analysis; final evaluation on the test set. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\paragraph{Use of AI coding assistants.} We used Claude (Anthropic) as an assistant: to discuss course concepts, to draft and refactor code (project architecture, diagnosis and tuning scripts), and to draft parts of this report from our findings log. Every script was run by the team, every number comes from our runs, and all methodological choices were reviewed by us. \todo{teammates: add your own use, if any}
+\paragraph{Use of AI coding assistants.} We used Claude (Anthropic) as an assistant to discuss methods, to draft and refactor code (project architecture, diagnosis, tuning and evaluation scripts) and to draft parts of this report from our findings log. Four commits in the repository were made under the assistant's name. Every script was run by us, every number comes from our runs, and every methodological choice was reviewed by the team.
 
-\begin{thebibliography}{9}\small
-\bibitem{kohavi1996} R.~Kohavi. Scaling up the accuracy of naive-Bayes classifiers: a decision-tree hybrid. \emph{KDD}, 1996 (the Adult dataset).
+\begin{thebibliography}{99}\small
+\bibitem{akiba2019} T.~Akiba, S.~Sano, T.~Yanase, T.~Ohta, M.~Koyama. Optuna: a next-generation hyperparameter optimization framework. \emph{KDD}, 2019.
+\bibitem{besse2022} P.~Besse, E.~del Barrio, P.~Gordaliza, J.-M.~Loubes, L.~Risser. A survey of bias in machine learning through the prism of statistical parity for the Adult data set. arXiv:2003.14263, 2020.
 \bibitem{chakrabarty2018} N.~Chakrabarty, S.~Biswas. A statistical approach to adult census income level prediction. arXiv:1810.10076, 2018.
 \bibitem{ding2021} F.~Ding, M.~Hardt, J.~Miller, L.~Schmidt. Retiring Adult: new datasets for fair machine learning. \emph{NeurIPS}, 2021.
+\bibitem{eeoc1978} US Equal Employment Opportunity Commission. Uniform Guidelines on Employee Selection Procedures, 29 CFR \S1607.4(D), 1978.
 \bibitem{hardt2016} M.~Hardt, E.~Price, N.~Srebro. Equality of opportunity in supervised learning. \emph{NeurIPS}, 2016.
 \bibitem{ke2017} G.~Ke et al. LightGBM: a highly efficient gradient boosting decision tree. \emph{NeurIPS}, 2017.
-\bibitem{akiba2019} T.~Akiba et al. Optuna: a next-generation hyperparameter optimization framework. \emph{KDD}, 2019.
+\bibitem{kleinberg2017} J.~Kleinberg, S.~Mullainathan, M.~Raghavan. Inherent trade-offs in the fair determination of risk scores. \emph{ITCS}, 2017.
+\bibitem{kohavi1996} R.~Kohavi. Scaling up the accuracy of naive-Bayes classifiers: a decision-tree hybrid. \emph{KDD}, 1996.
+\bibitem{lundberg2017} S.~M.~Lundberg, S.-I.~Lee. A unified approach to interpreting model predictions. \emph{NeurIPS}, 2017.
+\bibitem{pedregosa2011} F.~Pedregosa et al. Scikit-learn: machine learning in Python. \emph{JMLR} 12, 2011.
+\bibitem{platt1999} J.~Platt. Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods. \emph{Advances in Large Margin Classifiers}, 1999.
+\bibitem{weerts2023} H.~Weerts, M.~Dud\'ik, R.~Edgar, A.~Jalali, R.~Lutz, M.~Madaio. Fairlearn: assessing and improving fairness of AI systems. \emph{JMLR} 24, 2023.
+\bibitem{zaharia2018} M.~Zaharia et al. Accelerating the machine learning lifecycle with MLflow. \emph{IEEE Data Engineering Bulletin} 41(4), 2018.
 \end{thebibliography}
 
 % ---------------------------------------------------------------
 \appendix
 \section{Experiment tracking}
 \label{app:mlflow}
-\todo{screenshot of the MLflow runs table (parent run and its 25 trials) and the parallel-coordinates view of the random forest v2 trials}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{history.png}
+\caption{Every Optuna trial logged in MLflow (dots) and the best score so far (lines), tunings v1 (grey) and v2 (blue). Source: \code{python -m tuning.mlflow\_history}, which reads the tracking store.}
+\label{fig:history}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{mlflow_runs.png}
+\caption{The MLflow runs table of experiment \code{adult-income-bias-audit} (164 runs). The LightGBM v2 study (parent run, best CV PR-AUC 0.7189) is expanded to show its trial runs, each with its mean 5-fold CV PR-AUC, the standard deviation over the folds and the Brier score; the evaluation runs (calibration, fairness, SHAP) sit above it.}
+\label{fig:mlflow}
+\end{figure}
+
+\section{Tuned hyperparameters (v2)}
+\label{app:params}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Model & Best v2 settings (\code{tuning/results/v2/best\_params.json}) \\
+\midrule
+Logistic regression & $C = 6.80$, L2 penalty, no class weights (searched: $C$ from 0.01 to 100, log scale). \\
+Random forest & 300 trees, Gini, no class weights; 6 people per leaf, depth 16, 10 people to split, 39\% of people and $\sqrt{37}$ columns per tree. \\
+LightGBM & 950 trees, learning rate 0.014, 12 leaves, depth 10, 46 people per leaf, 80\% of people and 43\% of columns per tree, L1 1.56, L2 0.74, no class weight. \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \section{Reproducing the results}
-From the project root, with the environment active: \code{python3 -m src.data}; \code{python3 -m src.pipeline}; \code{python3 -m tuning.baseline}; \code{python3 -m tuning.random\_forest baseline} and \code{curves}; \code{python3 -m tuning.tune --version v2 --model rf}. Setup and troubleshooting are in the README.
+From the project root, with the environment of \code{requirements.txt}: \code{python -m tuning.baseline}; \code{python -m tuning.<model> baseline} and \code{curves} for \code{logistic\_regression}, \code{random\_forest} and \code{lightgbm}; \code{python -m tuning.tune --version v2}; \code{python -m src.evaluate calibration}; \code{python -m src.fairness audit}; \code{python -m src.evaluate shap}; \code{python -m src.shap\_local}; \code{python -m src.evaluate test} (run once); \code{python -m tuning.mlflow\_history}; \code{python -m report.make\_figures}.
 
 \end{document}

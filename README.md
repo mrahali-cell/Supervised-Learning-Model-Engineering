@@ -48,32 +48,43 @@ comparison in steps 5 to 8. The test set is opened only once, in step 11.
 ```
 src/                  LIBRARY: imported by everything else, never trains a model by itself
     config.py           paths and settings (results folders, tuned version used, MLflow)
-    data.py             load -> clean (fixed rules from the EDA) -> split; FEATURES, SENSITIVE, TARGET
-    pipeline.py         feature engineering + preprocessing + model, as one Pipeline
-    models.py           the models: defaults (baseline) and build_model(name, params)
     cv.py               cross-validation helpers: out-of-fold scores, train vs validation scores
+    data.py             load -> clean (fixed rules from the EDA) -> split; FEATURES, SENSITIVE, TARGET
     evaluate.py         calibration, SHAP explanations, final test-set evaluation
     fairness.py         fairness audit and mitigation
+    models.py           the models: defaults (baseline) and build_model(name, params)
+    pipeline.py         feature engineering + preprocessing + model, as one Pipeline
+    shap_local.py       Local SHAP explanations
+    
+    
+    
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py         stage 1: all models with default parameters
-    random_forest.py    random forest diagnosis: baseline table + validation curves (Manel)
-    lightgbm.py         LightGBM diagnosis: baseline table + validation curves (Hadiqa)
+    lightgbm.py         LightGBM diagnosis: baseline table + validation curves
+    random_forest.py    random forest diagnosis: baseline table + validation curves
+    mlflow_history.py   Optuna history from MLflow: every tuning trial of the three models, v1 and v2
+    logistic_regression.py LR diagnosis: baseline table + validation curves
     tune.py             stage 2: Optuna search + MLflow tracking, one search space per model
     results/            NUMBERS: everything the scripts produce
-        v1/best_params.json         first Optuna run, all three models (Soumaya)
+        lightgbm/       figures, baseline and curves parameters in csv
+        logistic_regression/ baseline.csv, curves.csv, elastic_net.csv, interactions_folds, csv, lasso_path.csv, lasso_scores.csv, lasso_zeros.csv, search_trials.csv, search.csv, figures/*.png
+        mlflow/         figures of optuna flow for all models and csv results
+        random_forest/  baseline.csv, curves.csv, curves/*.png
+        v1/best_params.json         first Optuna run, all three models
         v2/best_params.json         tuning after the diagnosis, all three models (used now)
-        random_forest/              baseline.csv, curves.csv, curves/*.png
-        lightgbm/                   same files for LightGBM (Hadiqa)
+    
 notebooks/            EXPLANATIONS: read the results files and comment them, no training
     01_eda.ipynb                  EDA: every data decision and why
     02_logistic_regression.ipynb  one notebook per model: baseline, diagnosis, curves, tuning, findings
-    03_random_forest.ipynb
+    03_random_forest.ipynb        
     04_lightgbm.ipynb
-    05_calibration_explain_test.ipynb  final model (LightGBM v2): calibration, then SHAP and the test set
+    05_calibration_explain.ipynb  final model (LightGBM v2): calibration, then SHAP
     06_fairness.ipynb             fairness audit by sex: v1 and v2 (recalibrated LightGBM), before / after
     07_test.ipynb                 final evaluation on the test set (once) and model card
+
 reports/              calibration and fairness outputs (json + figures)
-docs/findings_log.md  the log of every finding and decision (for the report and the oral)
+
+report/               pdf report lateX file and figures code
 requirements.txt      Python libraries
 ```
 

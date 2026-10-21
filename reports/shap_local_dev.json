@@ -1,0 +1,109 @@
+{
+  "model": "LightGBM",
+  "version": "v2",
+  "units": "log-odds (LightGBM raw score)",
+  "threshold_best_f1": 0.3430747157655897,
+  "rule": "median out-of-fold probability within each outcome at the best-F1 threshold",
+  "people": [
+    {
+      "outcome": "true positive",
+      "row_id": 22098,
+      "sex": "Male",
+      "actual": 1,
+      "probability": 0.6789430146512442,
+      "score": 0.7489185668082197,
+      "base_value": -2.2126801678025787,
+      "inputs": {
+        "age": 35,
+        "workclass": "Private",
+        "education-num": 14,
+        "marital-status": "Married-civ-spouse",
+        "occupation": "Sales",
+        "hours-per-week": 40
+      },
+      "contributions": {
+        "marital-status": 1.346393414066048,
+        "education-num": 1.212589009837049,
+        "age": 0.282819621225168,
+        "occupation": 0.1410104983313668,
+        "hours-per-week": -0.07846694003344201,
+        "workclass": 0.0572531311846084
+      }
+    },
+    {
+      "outcome": "false positive",
+      "row_id": 43329,
+      "sex": "Female",
+      "actual": 0,
+      "probability": 0.5055833264430609,
+      "score": 0.022334234119127938,
+      "base_value": -2.186012393444654,
+      "inputs": {
+        "age": 45,
+        "workclass": "State-gov",
+        "education-num": 9,
+        "marital-status": "Married-civ-spouse",
+        "occupation": "Exec-managerial",
+        "hours-per-week": 40
+      },
+      "contributions": {
+        "marital-status": 1.4164620027657218,
+        "age": 0.6948651402120622,
+        "occupation": 0.6229901342811894,
+        "education-num": -0.3283897154131291,
+        "workclass": -0.1592244866123457,
+        "hours-per-week": -0.03835644766971663
+      }
+    },
+    {
+      "outcome": "false negative",
+      "row_id": 8187,
+      "sex": "Female",
+      "actual": 1,
+      "probability": 0.20034565216707254,
+      "score": -1.3841354334328992,
+      "base_value": -2.2126801678025787,
+      "inputs": {
+        "age": 51,
+        "workclass": "Self-emp-not-inc",
+        "education-num": 9,
+        "marital-status": "Divorced",
+        "occupation": "Exec-managerial",
+        "hours-per-week": 60
+      },
+      "contributions": {
+        "hours-per-week": 0.8784626146496104,
+        "marital-status": -0.8766495166163483,
+        "age": 0.8231061647072216,
+        "occupation": 0.5126592034534728,
+        "education-num": -0.3802424498321621,
+        "workclass": -0.12879128199211495
+      }
+    },
+    {
+      "outcome": "true negative",
+      "row_id": 25595,
+      "sex": "Female",
+      "actual": 0,
+      "probability": 0.03225828672325351,
+      "score": -3.4011902636509665,
+      "base_value": -2.208761632336267,
+      "inputs": {
+        "age": 36,
+        "workclass": "Private",
+        "education-num": 12,
+        "marital-status": "Never-married",
+        "occupation": "Adm-clerical",
+        "hours-per-week": 40
+      },
+      "contributions": {
+        "marital-status": -1.3736744371106167,
+        "age": 0.31043278091169973,
+        "occupation": -0.2431426756507981,
+        "education-num": 0.1785097851861041,
+        "hours-per-week": -0.06963266763940137,
+        "workclass": 0.0050785829883127406
+      }
+    }
+  ]
+}
