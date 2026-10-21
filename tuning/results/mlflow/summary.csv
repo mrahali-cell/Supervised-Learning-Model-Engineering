@@ -1,0 +1,7 @@
+model,version,trials,best cv PR-AUC,best cv PR-AUC std,best trial,best cv Brier,trials within 0.002 of best,lowest cv PR-AUC
+LightGBM,v1,25,0.719,0.013,19,0.1112,18,0.6855
+LightGBM,v2,25,0.7189,0.0141,21,0.1096,21,0.7102
+Logistic Regression,v1,25,0.7083,0.0144,16,0.1113,18,0.6499
+Logistic Regression,v2,25,0.7083,0.0145,9,0.1113,22,0.7019
+Random Forest,v1,25,0.7147,0.0144,24,0.1365,9,0.6873
+Random Forest,v2,25,0.7146,0.0145,24,0.1103,20,0.7091

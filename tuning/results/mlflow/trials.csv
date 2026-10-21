@@ -1,0 +1,151 @@
+model,version,trial,cv PR-AUC,cv PR-AUC std,cv ROC-AUC,cv Brier,params
+LightGBM,v1,0,0.6855,0.0124,0.8784,0.1354,colsample_bytree=0.5779972601681014; learning_rate=0.17254716573280354; min_child_samples=64; n_estimators=300; num_leaves=73; reg_alpha=3.3323645788192616e-08; reg_lambda=0.6245760287469893; scale_pos_weight=2.8033450352296265; subsample=0.6624074561769746
+LightGBM,v1,1,0.7165,0.0142,0.8922,0.1275,colsample_bytree=0.5909124836035503; learning_rate=0.010636066512540286; min_child_samples=85; n_estimators=450; num_leaves=94; reg_alpha=4.4734294104626844e-07; reg_lambda=5.472429642032198e-06; scale_pos_weight=2.5742692948967134; subsample=0.6849356442713105
+LightGBM,v1,2,0.7172,0.013,0.8922,0.1143,colsample_bytree=0.6831809216468459; learning_rate=0.023927528765580644; min_child_samples=22; n_estimators=300; num_leaves=62; reg_alpha=0.00012724181576752517; reg_lambda=0.1165691561324743; scale_pos_weight=1.5990213464750793; subsample=0.7168578594140873
+LightGBM,v1,3,0.7171,0.0148,0.8925,0.1416,colsample_bytree=0.5325257964926398; learning_rate=0.05898602410432694; min_child_samples=65; n_estimators=350; num_leaves=12; reg_alpha=3.4671276804481113; reg_lambda=4.905556676028774; scale_pos_weight=3.4251920443493833; subsample=0.6682096494749166
+LightGBM,v1,4,0.7168,0.0131,0.8924,0.1156,colsample_bytree=0.7475884550556351; learning_rate=0.013399060561509796; min_child_samples=50; n_estimators=250; num_leaves=68; reg_alpha=2.039373116525212e-08; reg_lambda=1.527156759251193; scale_pos_weight=1.7763399448000508; subsample=0.6488152939379115
+LightGBM,v1,5,0.715,0.0133,0.8909,0.1433,colsample_bytree=0.9847923138822793; learning_rate=0.02544166090938368; min_child_samples=59; n_estimators=450; num_leaves=54; reg_alpha=0.09466630153726856; reg_lambda=2.854239907497756; scale_pos_weight=3.6844820512829464; subsample=0.6739417822102108
+LightGBM,v1,6,0.7062,0.0132,0.8871,0.142,colsample_bytree=0.6626651653816322; learning_rate=0.15826541904647565; min_child_samples=27; n_estimators=400; num_leaves=15; reg_alpha=3.148441347423712e-05; reg_lambda=2.7678419414850017e-06; scale_pos_weight=3.486212527455788; subsample=0.6180909155642152
+LightGBM,v1,7,0.7175,0.0141,0.8927,0.114,colsample_bytree=0.5372753218398854; learning_rate=0.023200867504756827; min_child_samples=22; n_estimators=250; num_leaves=56; reg_alpha=7.620481786158549; reg_lambda=0.08916674715636537; scale_pos_weight=1.5961470446025172; subsample=0.9208787923016158
+LightGBM,v1,8,0.713,0.0134,0.8898,0.1425,colsample_bytree=0.5370223258670452; learning_rate=0.11506408247250169; min_child_samples=76; n_estimators=100; num_leaves=70; reg_alpha=1.683416412018213e-05; reg_lambda=1.1036250149900698e-07; scale_pos_weight=3.5893102776267805; subsample=0.9085081386743783
+LightGBM,v1,9,0.7181,0.0141,0.8928,0.1264,colsample_bytree=0.864803089169032; learning_rate=0.026946865572417687; min_child_samples=38; n_estimators=400; num_leaves=13; reg_alpha=0.005470376807480391; reg_lambda=0.9658611176861268; scale_pos_weight=2.4166447754858478; subsample=0.7300733288106989
+LightGBM,v1,10,0.7186,0.0132,0.8929,0.1165,colsample_bytree=0.7830554715511626; learning_rate=0.017609300107623918; min_child_samples=51; n_estimators=400; num_leaves=31; reg_alpha=1.2295610410042767e-06; reg_lambda=1.5524227276085611; scale_pos_weight=1.7682175768993478; subsample=0.6673852456905257
+LightGBM,v1,11,0.7183,0.0141,0.8927,0.1229,colsample_bytree=0.846171769388118; learning_rate=0.03637034177911612; min_child_samples=50; n_estimators=450; num_leaves=11; reg_alpha=9.720595108138636e-05; reg_lambda=0.5264813658203515; scale_pos_weight=2.199711072190149; subsample=0.6925579489647421
+LightGBM,v1,12,0.7185,0.0129,0.8928,0.112,colsample_bytree=0.74238108434285; learning_rate=0.017686928265444987; min_child_samples=43; n_estimators=350; num_leaves=24; reg_alpha=5.727939411639082e-07; reg_lambda=0.0019133160847302506; scale_pos_weight=1.3985179743156928; subsample=0.6821826819609246
+LightGBM,v1,13,0.718,0.0128,0.8925,0.112,colsample_bytree=0.8789863522723516; learning_rate=0.025013301674754754; min_child_samples=46; n_estimators=400; num_leaves=28; reg_alpha=1.6171976182445772e-07; reg_lambda=2.9386244761389385e-05; scale_pos_weight=1.3774350212243986; subsample=0.7632919535646945
+LightGBM,v1,14,0.7171,0.0138,0.8922,0.1197,colsample_bytree=0.7420662526404785; learning_rate=0.021511173116350136; min_child_samples=22; n_estimators=300; num_leaves=12; reg_alpha=8.147628927086143e-08; reg_lambda=2.5355087138252204e-05; scale_pos_weight=1.9654503818285325; subsample=0.6269888158024658
+LightGBM,v1,15,0.7177,0.0132,0.8927,0.1197,colsample_bytree=0.656349579496732; learning_rate=0.019699481728310347; min_child_samples=45; n_estimators=350; num_leaves=46; reg_alpha=5.583689478633298e-06; reg_lambda=0.4017971703481047; scale_pos_weight=2.0134108718814763; subsample=0.6363401536173626
+LightGBM,v1,16,0.718,0.0131,0.8927,0.1113,colsample_bytree=0.7153759808030642; learning_rate=0.01812133382389574; min_child_samples=11; n_estimators=350; num_leaves=21; reg_alpha=8.854609169490556e-07; reg_lambda=0.01000285805060901; scale_pos_weight=1.3276131721109827; subsample=0.6974113351384813
+LightGBM,v1,17,0.7177,0.0136,0.8927,0.1195,colsample_bytree=0.7812218040515768; learning_rate=0.023010638818524356; min_child_samples=69; n_estimators=200; num_leaves=41; reg_alpha=5.68082891770477e-08; reg_lambda=1.5240925218448733; scale_pos_weight=2.0018205019586968; subsample=0.6783347685194546
+LightGBM,v1,18,0.7181,0.0131,0.8927,0.1226,colsample_bytree=0.7730841448579387; learning_rate=0.01533563500344613; min_child_samples=32; n_estimators=300; num_leaves=32; reg_alpha=1.137795583383004e-07; reg_lambda=0.003397090421210701; scale_pos_weight=2.214979105434119; subsample=0.7022544011812928
+LightGBM,v1,19,0.719,0.013,0.8928,0.1112,colsample_bytree=0.9243288610107918; learning_rate=0.01636353356838844; min_child_samples=36; n_estimators=350; num_leaves=27; reg_alpha=0.0008248101443310095; reg_lambda=0.012402271701031737; scale_pos_weight=1.315513460772054; subsample=0.6858288808030989
+LightGBM,v1,20,0.7179,0.0136,0.8924,0.1102,colsample_bytree=0.7895333954228629; learning_rate=0.014032197674649131; min_child_samples=45; n_estimators=400; num_leaves=17; reg_alpha=0.00014844728380629355; reg_lambda=0.4187524756494776; scale_pos_weight=1.1525780265462702; subsample=0.635603064802504
+LightGBM,v1,21,0.7172,0.0135,0.8925,0.113,colsample_bytree=0.7982599240726174; learning_rate=0.025651528600090054; min_child_samples=66; n_estimators=400; num_leaves=28; reg_alpha=2.538383931546014e-06; reg_lambda=0.0017252119817406208; scale_pos_weight=1.4683619926812594; subsample=0.6866596821028834
+LightGBM,v1,22,0.7167,0.0131,0.8919,0.1113,colsample_bytree=0.7980906024783252; learning_rate=0.011932514623191828; min_child_samples=44; n_estimators=300; num_leaves=24; reg_alpha=0.0019974580975654498; reg_lambda=0.00013891213542604854; scale_pos_weight=1.3113969579616966; subsample=0.6229766463905655
+LightGBM,v1,23,0.7186,0.0132,0.8929,0.1167,colsample_bytree=0.7851868778366167; learning_rate=0.014878369027531755; min_child_samples=44; n_estimators=400; num_leaves=36; reg_alpha=2.3390812503607866e-06; reg_lambda=0.1700128419902091; scale_pos_weight=1.7982576530051269; subsample=0.7256914486744795
+LightGBM,v1,24,0.7178,0.0129,0.8926,0.1135,colsample_bytree=0.9673754667744526; learning_rate=0.010668053971249222; min_child_samples=35; n_estimators=400; num_leaves=33; reg_alpha=0.0035814867368444184; reg_lambda=0.005178458474684908; scale_pos_weight=1.5525549720704803; subsample=0.6982528819700239
+LightGBM,v2,0,0.7179,0.0151,0.8925,0.1096,colsample_bytree=0.3406585285177396; learning_rate=0.023688639503640783; max_depth=8; min_child_samples=15; n_estimators=1000; num_leaves=48; reg_alpha=10.275417738969418; reg_lambda=2.5378155082656657; scale_pos_weight=1.0; subsample=0.7467983561008608
+LightGBM,v2,1,0.7175,0.0142,0.8926,0.1097,colsample_bytree=0.4283831568974037; learning_rate=0.051059032093947576; max_depth=11; min_child_samples=18; n_estimators=100; num_leaves=62; reg_alpha=0.11425814516827706; reg_lambda=1.256104370001356; scale_pos_weight=1.0; subsample=0.7545474901621302
+LightGBM,v2,2,0.7171,0.0138,0.892,0.1099,colsample_bytree=0.619248988951925; learning_rate=0.027036160666620016; max_depth=4; min_child_samples=23; n_estimators=350; num_leaves=42; reg_alpha=5.372198163554896; reg_lambda=0.0629064429458615; scale_pos_weight=1.0; subsample=0.8099085529881075
+LightGBM,v2,3,0.7165,0.0142,0.8915,0.1101,colsample_bytree=0.9642198760773333; learning_rate=0.032676417657817626; max_depth=9; min_child_samples=16; n_estimators=650; num_leaves=10; reg_alpha=22.783459357466153; reg_lambda=17.12337597316399; scale_pos_weight=1.0; subsample=0.7195154778955838
+LightGBM,v2,4,0.7102,0.0129,0.889,0.1131,colsample_bytree=0.32407196478065287; learning_rate=0.020165721691808594; max_depth=7; min_child_samples=14; n_estimators=150; num_leaves=46; reg_alpha=14.515008597840259; reg_lambda=0.10842262717330164; scale_pos_weight=1.0; subsample=0.848553073033381
+LightGBM,v2,5,0.7172,0.0139,0.8919,0.1099,colsample_bytree=0.8425929763527802; learning_rate=0.04597505784732168; max_depth=8; min_child_samples=17; n_estimators=350; num_leaves=37; reg_alpha=18.482117991817724; reg_lambda=37.95853142670641; scale_pos_weight=1.0; subsample=0.9908753883293675
+LightGBM,v2,6,0.717,0.0144,0.8925,0.1098,colsample_bytree=0.5720741027826374; learning_rate=0.03961867790406585; max_depth=4; min_child_samples=11; n_estimators=950; num_leaves=12; reg_alpha=0.08780383517553683; reg_lambda=20.651425578959262; scale_pos_weight=1.0; subsample=0.7975990992289793
+LightGBM,v2,7,0.7163,0.0139,0.8916,0.1101,colsample_bytree=0.9908208556203622; learning_rate=0.02273805573563183; max_depth=4; min_child_samples=110; n_estimators=350; num_leaves=38; reg_alpha=4.84382786427857; reg_lambda=0.06235377135673159; scale_pos_weight=1.0; subsample=0.7223651931039312
+LightGBM,v2,8,0.718,0.0146,0.8927,0.1097,colsample_bytree=0.5509260099809907; learning_rate=0.010127963257331486; max_depth=10; min_child_samples=100; n_estimators=850; num_leaves=47; reg_alpha=0.025286619271343746; reg_lambda=28.34090429514775; scale_pos_weight=1.0; subsample=0.7222133955202271
+LightGBM,v2,9,0.7175,0.0147,0.8922,0.1098,colsample_bytree=0.7462902299486491; learning_rate=0.042004723167022; max_depth=6; min_child_samples=26; n_estimators=400; num_leaves=11; reg_alpha=12.160355870562363; reg_lambda=0.7742116473996251; scale_pos_weight=1.0; subsample=0.9188818535014192
+LightGBM,v2,10,0.7187,0.0144,0.8928,0.1096,colsample_bytree=0.4864494888244921; learning_rate=0.012010682873373063; max_depth=10; min_child_samples=108; n_estimators=1000; num_leaves=13; reg_alpha=0.6879126260306656; reg_lambda=3.850566887997099; scale_pos_weight=1.0; subsample=0.7863990438090718
+LightGBM,v2,11,0.7157,0.0142,0.8916,0.1101,colsample_bytree=0.6534175747557176; learning_rate=0.015387258352925072; max_depth=10; min_child_samples=85; n_estimators=450; num_leaves=51; reg_alpha=0.015832488598149237; reg_lambda=93.62034497882081; scale_pos_weight=1.0; subsample=0.7014673376286962
+LightGBM,v2,12,0.7183,0.0138,0.8929,0.1096,colsample_bytree=0.5182162016566917; learning_rate=0.013117822568913176; max_depth=9; min_child_samples=65; n_estimators=650; num_leaves=30; reg_alpha=0.021478819981849112; reg_lambda=2.180147040168592; scale_pos_weight=1.0; subsample=0.748573971404213
+LightGBM,v2,13,0.7181,0.0142,0.8927,0.1097,colsample_bytree=0.5683088735374664; learning_rate=0.0123332988107015; max_depth=11; min_child_samples=94; n_estimators=800; num_leaves=26; reg_alpha=0.15147311492830748; reg_lambda=26.92379172118509; scale_pos_weight=1.0; subsample=0.7481215313706492
+LightGBM,v2,14,0.7178,0.0144,0.8922,0.1098,colsample_bytree=0.5964734726076281; learning_rate=0.01035390997726177; max_depth=12; min_child_samples=53; n_estimators=950; num_leaves=10; reg_alpha=2.450076073497344; reg_lambda=6.348206006093066; scale_pos_weight=1.0; subsample=0.8441141522274284
+LightGBM,v2,15,0.7181,0.0147,0.8928,0.1097,colsample_bytree=0.3956663704181217; learning_rate=0.01521832956931338; max_depth=9; min_child_samples=164; n_estimators=850; num_leaves=24; reg_alpha=0.11731272586055783; reg_lambda=17.338677935102037; scale_pos_weight=1.0; subsample=0.8005540694448028
+LightGBM,v2,16,0.7179,0.0143,0.8927,0.1097,colsample_bytree=0.4727662319100306; learning_rate=0.014677018634060892; max_depth=8; min_child_samples=109; n_estimators=650; num_leaves=41; reg_alpha=0.17984648743767756; reg_lambda=2.1855729485509654; scale_pos_weight=1.0; subsample=0.7321075431549173
+LightGBM,v2,17,0.7184,0.0143,0.8927,0.1096,colsample_bytree=0.4179957218254869; learning_rate=0.010104859418142067; max_depth=9; min_child_samples=127; n_estimators=1000; num_leaves=14; reg_alpha=0.8209618190912228; reg_lambda=0.7076215185368127; scale_pos_weight=1.0; subsample=0.8784283663937569
+LightGBM,v2,18,0.718,0.0141,0.8925,0.1097,colsample_bytree=0.508978729383045; learning_rate=0.012126037455563083; max_depth=7; min_child_samples=86; n_estimators=850; num_leaves=13; reg_alpha=1.1252445855620337; reg_lambda=4.804375313654911; scale_pos_weight=1.0; subsample=0.8647960202689511
+LightGBM,v2,19,0.717,0.0142,0.8925,0.1098,colsample_bytree=0.6192027202638276; learning_rate=0.01311719217124798; max_depth=10; min_child_samples=128; n_estimators=950; num_leaves=30; reg_alpha=1.046869074121086; reg_lambda=8.765590132115078; scale_pos_weight=1.0; subsample=0.7381234952380402
+LightGBM,v2,20,0.7174,0.0144,0.8921,0.1098,colsample_bytree=0.403440738730547; learning_rate=0.010431092455994027; max_depth=11; min_child_samples=109; n_estimators=900; num_leaves=10; reg_alpha=3.7788396852202326; reg_lambda=0.9912185738834226; scale_pos_weight=1.0; subsample=0.8413329438860658
+LightGBM,v2,21,0.7189,0.0141,0.8928,0.1096,colsample_bytree=0.42878328256161574; learning_rate=0.013878841899198248; max_depth=10; min_child_samples=46; n_estimators=950; num_leaves=12; reg_alpha=1.5567434572002916; reg_lambda=0.7385607696113071; scale_pos_weight=1.0; subsample=0.797687788518375
+LightGBM,v2,22,0.7186,0.0143,0.8927,0.1096,colsample_bytree=0.40975258520022095; learning_rate=0.021024269365866745; max_depth=12; min_child_samples=51; n_estimators=950; num_leaves=11; reg_alpha=2.6241896200349237; reg_lambda=1.095551562901147; scale_pos_weight=1.0; subsample=0.8501424900057416
+LightGBM,v2,23,0.718,0.0145,0.8924,0.1097,colsample_bytree=0.5129276177767723; learning_rate=0.012894227155612167; max_depth=10; min_child_samples=67; n_estimators=950; num_leaves=18; reg_alpha=8.133259150611163; reg_lambda=1.5983833189315588; scale_pos_weight=1.0; subsample=0.8243789221103152
+LightGBM,v2,24,0.7183,0.0145,0.8927,0.1096,colsample_bytree=0.40007392381232265; learning_rate=0.02493283958236558; max_depth=12; min_child_samples=91; n_estimators=950; num_leaves=9; reg_alpha=2.1776023269017615; reg_lambda=1.298026424074498; scale_pos_weight=1.0; subsample=0.8721167203483926
+Logistic Regression,v1,0,0.7072,0.0142,0.8885,0.1115,C=0.0745934328572655; class_weight=None; penalty=l1
+Logistic Regression,v1,1,0.6927,0.0128,0.8844,0.1445,C=0.0060252157362038605; class_weight=balanced; penalty=l2
+Logistic Regression,v1,2,0.6499,0.0125,0.8664,0.1288,C=0.001267425589893723; class_weight=None; penalty=l1
+Logistic Regression,v1,3,0.6967,0.0129,0.8849,0.1137,C=0.008260808399079604; class_weight=None; penalty=l2
+Logistic Regression,v1,4,0.7063,0.0143,0.8886,0.1397,C=1.1462107403425035; class_weight=balanced; penalty=l2
+Logistic Regression,v1,5,0.7083,0.0145,0.8887,0.1113,C=8.43101393208247; class_weight=None; penalty=l2
+Logistic Regression,v1,6,0.7063,0.0144,0.8886,0.1397,C=1.0907475835157696; class_weight=balanced; penalty=l1
+Logistic Regression,v1,7,0.7083,0.0145,0.8887,0.1113,C=11.015056790269638; class_weight=None; penalty=l1
+Logistic Regression,v1,8,0.6632,0.0144,0.8741,0.1197,C=0.00407559644007287; class_weight=None; penalty=l1
+Logistic Regression,v1,9,0.7083,0.0144,0.8888,0.1113,C=2.0540519425388455; class_weight=None; penalty=l2
+Logistic Regression,v1,10,0.7083,0.0145,0.8887,0.1113,C=30.91516819686349; class_weight=None; penalty=l2
+Logistic Regression,v1,11,0.7083,0.0145,0.8887,0.1113,C=72.62904586382648; class_weight=None; penalty=l2
+Logistic Regression,v1,12,0.7063,0.0144,0.8885,0.1398,C=37.18059571920761; class_weight=balanced; penalty=l2
+Logistic Regression,v1,13,0.7083,0.0145,0.8887,0.1113,C=13.121225751694595; class_weight=None; penalty=l2
+Logistic Regression,v1,14,0.7082,0.0143,0.8888,0.1113,C=0.5735555731045808; class_weight=None; penalty=l2
+Logistic Regression,v1,15,0.7056,0.0139,0.8885,0.14,C=0.1006152596403488; class_weight=balanced; penalty=l2
+Logistic Regression,v1,16,0.7083,0.0144,0.8887,0.1113,C=5.176564814928184; class_weight=None; penalty=l2
+Logistic Regression,v1,17,0.7063,0.0144,0.8886,0.1398,C=6.272181724949457; class_weight=balanced; penalty=l2
+Logistic Regression,v1,18,0.7063,0.0145,0.8885,0.1398,C=61.72185406091736; class_weight=balanced; penalty=l1
+Logistic Regression,v1,19,0.701,0.0136,0.8869,0.1414,C=0.025526474691125862; class_weight=balanced; penalty=l1
+Logistic Regression,v1,20,0.7083,0.0144,0.8888,0.1113,C=1.2754468475816725; class_weight=None; penalty=l1
+Logistic Regression,v1,21,0.7083,0.0144,0.8888,0.1113,C=1.1443931847608726; class_weight=None; penalty=l1
+Logistic Regression,v1,22,0.7063,0.0144,0.8885,0.1398,C=7.506946663639057; class_weight=balanced; penalty=l1
+Logistic Regression,v1,23,0.7083,0.0145,0.8887,0.1113,C=3.972168940284467; class_weight=None; penalty=l1
+Logistic Regression,v1,24,0.7083,0.0145,0.8886,0.1113,C=64.78158231660683; class_weight=None; penalty=l1
+Logistic Regression,v2,0,0.7081,0.0143,0.8888,0.1114,C=0.31489116479568624; class_weight=None; penalty=l2
+Logistic Regression,v2,1,0.7083,0.0145,0.8887,0.1113,C=63.512210106407046; class_weight=None; penalty=l2
+Logistic Regression,v2,2,0.7083,0.0145,0.8887,0.1113,C=8.471801418819979; class_weight=None; penalty=l2
+Logistic Regression,v2,3,0.7083,0.0144,0.8888,0.1113,C=2.481040974867813; class_weight=None; penalty=l2
+Logistic Regression,v2,4,0.7056,0.0137,0.888,0.1118,C=0.04207988669606638; class_weight=None; penalty=l2
+Logistic Regression,v2,5,0.7056,0.0137,0.888,0.1118,C=0.042070539502879395; class_weight=None; penalty=l2
+Logistic Regression,v2,6,0.7019,0.0133,0.8866,0.1126,C=0.017073967431528128; class_weight=None; penalty=l2
+Logistic Regression,v2,7,0.7083,0.0145,0.8887,0.1113,C=29.154431891537552; class_weight=None; penalty=l2
+Logistic Regression,v2,8,0.7083,0.0144,0.8888,0.1113,C=2.5378155082656657; class_weight=None; penalty=l2
+Logistic Regression,v2,9,0.7083,0.0145,0.8887,0.1113,C=6.79657809075816; class_weight=None; penalty=l2
+Logistic Regression,v2,10,0.708,0.0142,0.8888,0.1114,C=0.29321015720359556; class_weight=None; penalty=l2
+Logistic Regression,v2,11,0.7083,0.0145,0.8887,0.1113,C=9.675732510483002; class_weight=None; penalty=l2
+Logistic Regression,v2,12,0.7083,0.0144,0.8887,0.1113,C=6.087951913361185; class_weight=None; penalty=l2
+Logistic Regression,v2,13,0.7083,0.0144,0.8888,0.1113,C=1.1193866212740948; class_weight=None; penalty=l2
+Logistic Regression,v2,14,0.7083,0.0145,0.8887,0.1113,C=16.088388144218285; class_weight=None; penalty=l2
+Logistic Regression,v2,15,0.7083,0.0144,0.8887,0.1113,C=4.031500784144748; class_weight=None; penalty=l2
+Logistic Regression,v2,16,0.7082,0.0143,0.8888,0.1113,C=0.5940207669112705; class_weight=None; penalty=l2
+Logistic Regression,v2,17,0.7083,0.0145,0.8887,0.1113,C=70.07304655597886; class_weight=None; penalty=l2
+Logistic Regression,v2,18,0.7083,0.0145,0.8887,0.1113,C=20.59252511253575; class_weight=None; penalty=l2
+Logistic Regression,v2,19,0.7083,0.0144,0.8887,0.1113,C=4.994640236301264; class_weight=None; penalty=l2
+Logistic Regression,v2,20,0.7075,0.014,0.8886,0.1114,C=0.13275283883341535; class_weight=None; penalty=l2
+Logistic Regression,v2,21,0.7083,0.0145,0.8887,0.1113,C=6.110839973079704; class_weight=None; penalty=l2
+Logistic Regression,v2,22,0.7083,0.0144,0.8888,0.1113,C=1.38942282545749; class_weight=None; penalty=l2
+Logistic Regression,v2,23,0.7083,0.0145,0.8887,0.1113,C=7.129710821395748; class_weight=None; penalty=l2
+Logistic Regression,v2,24,0.7083,0.0145,0.8887,0.1113,C=27.415910995915915; class_weight=None; penalty=l2
+Random Forest,v1,0,0.7136,0.0141,0.8913,0.1345,class_weight=balanced_subsample; max_depth=23; max_features=sqrt; min_samples_leaf=10; n_estimators=200
+Random Forest,v1,1,0.6945,0.0148,0.8823,0.1258,class_weight=balanced_subsample; max_depth=18; max_features=sqrt; min_samples_leaf=1; n_estimators=300
+Random Forest,v1,2,0.7137,0.0153,0.8907,0.1327,class_weight=balanced_subsample; max_depth=15; max_features=log2; min_samples_leaf=3; n_estimators=200
+Random Forest,v1,3,0.6873,0.0126,0.8797,0.1166,class_weight=None; max_depth=20; max_features=log2; min_samples_leaf=1; n_estimators=250
+Random Forest,v1,4,0.7121,0.0153,0.8902,0.1111,class_weight=None; max_depth=23; max_features=sqrt; min_samples_leaf=26; n_estimators=100
+Random Forest,v1,5,0.7083,0.0163,0.888,0.13,class_weight=balanced_subsample; max_depth=14; max_features=sqrt; min_samples_leaf=1; n_estimators=100
+Random Forest,v1,6,0.7013,0.0135,0.8855,0.1461,class_weight=balanced_subsample; max_depth=7; max_features=log2; min_samples_leaf=27; n_estimators=250
+Random Forest,v1,7,0.7056,0.013,0.887,0.1138,class_weight=None; max_depth=8; max_features=log2; min_samples_leaf=1; n_estimators=100
+Random Forest,v1,8,0.695,0.0124,0.8825,0.1146,class_weight=None; max_depth=15; max_features=0.5; min_samples_leaf=1; n_estimators=150
+Random Forest,v1,9,0.7139,0.0156,0.8912,0.1105,class_weight=None; max_depth=21; max_features=log2; min_samples_leaf=9; n_estimators=100
+Random Forest,v1,10,0.713,0.0149,0.8905,0.111,class_weight=None; max_depth=20; max_features=log2; min_samples_leaf=20; n_estimators=250
+Random Forest,v1,11,0.7141,0.0137,0.8908,0.1364,class_weight=balanced_subsample; max_depth=12; max_features=log2; min_samples_leaf=4; n_estimators=250
+Random Forest,v1,12,0.6965,0.0128,0.8834,0.148,class_weight=balanced_subsample; max_depth=6; max_features=log2; min_samples_leaf=3; n_estimators=300
+Random Forest,v1,13,0.6885,0.0121,0.8803,0.1517,class_weight=balanced_subsample; max_depth=5; max_features=log2; min_samples_leaf=4; n_estimators=150
+Random Forest,v1,14,0.7114,0.0151,0.8899,0.1115,class_weight=None; max_depth=15; max_features=log2; min_samples_leaf=23; n_estimators=150
+Random Forest,v1,15,0.7119,0.0144,0.8905,0.1107,class_weight=None; max_depth=20; max_features=log2; min_samples_leaf=5; n_estimators=100
+Random Forest,v1,16,0.7115,0.0143,0.8895,0.1118,class_weight=None; max_depth=11; max_features=log2; min_samples_leaf=10; n_estimators=100
+Random Forest,v1,17,0.7103,0.0141,0.8901,0.1109,class_weight=None; max_depth=24; max_features=log2; min_samples_leaf=4; n_estimators=300
+Random Forest,v1,18,0.7129,0.0136,0.8904,0.1384,class_weight=balanced_subsample; max_depth=11; max_features=sqrt; min_samples_leaf=9; n_estimators=250
+Random Forest,v1,19,0.7139,0.014,0.8908,0.1365,class_weight=balanced_subsample; max_depth=12; max_features=log2; min_samples_leaf=4; n_estimators=400
+Random Forest,v1,20,0.7091,0.0133,0.8887,0.1415,class_weight=balanced_subsample; max_depth=9; max_features=log2; min_samples_leaf=6; n_estimators=400
+Random Forest,v1,21,0.7139,0.0152,0.8911,0.1106,class_weight=None; max_depth=22; max_features=log2; min_samples_leaf=14; n_estimators=150
+Random Forest,v1,22,0.7111,0.0151,0.8902,0.1305,class_weight=balanced_subsample; max_depth=18; max_features=log2; min_samples_leaf=3; n_estimators=400
+Random Forest,v1,23,0.711,0.0138,0.8892,0.1121,class_weight=None; max_depth=11; max_features=log2; min_samples_leaf=17; n_estimators=200
+Random Forest,v1,24,0.7147,0.0144,0.8913,0.1365,class_weight=balanced_subsample; max_depth=15; max_features=log2; min_samples_leaf=10; n_estimators=300
+Random Forest,v2,0,0.7144,0.0146,0.8913,0.1104,class_weight=None; criterion=gini; max_depth=20; max_features=sqrt; max_samples=0.7190609389379257; min_samples_leaf=9; min_samples_split=54; n_estimators=300
+Random Forest,v2,1,0.7091,0.0145,0.8888,0.1122,class_weight=None; criterion=gini; max_depth=15; max_features=sqrt; max_samples=0.3144091460070617; min_samples_leaf=24; min_samples_split=48; n_estimators=300
+Random Forest,v2,2,0.7132,0.014,0.8904,0.1109,class_weight=None; criterion=gini; max_depth=10; max_features=0.3; max_samples=0.6673295021425665; min_samples_leaf=6; min_samples_split=7; n_estimators=300
+Random Forest,v2,3,0.7133,0.014,0.8905,0.1111,class_weight=None; criterion=gini; max_depth=11; max_features=sqrt; max_samples=0.619248988951925; min_samples_leaf=6; min_samples_split=9; n_estimators=300
+Random Forest,v2,4,0.7095,0.0142,0.8886,0.1122,class_weight=None; criterion=gini; max_depth=8; max_features=0.3; max_samples=0.41936688658110405; min_samples_leaf=14; min_samples_split=29; n_estimators=300
+Random Forest,v2,5,0.7135,0.0142,0.8904,0.1109,class_weight=None; criterion=gini; max_depth=11; max_features=0.3; max_samples=0.7789631185585097; min_samples_leaf=21; min_samples_split=2; n_estimators=300
+Random Forest,v2,6,0.7096,0.0136,0.8893,0.1111,class_weight=None; criterion=gini; max_depth=19; max_features=0.3; max_samples=0.7637655990477874; min_samples_leaf=5; min_samples_split=5; n_estimators=300
+Random Forest,v2,7,0.7131,0.0146,0.8907,0.1105,class_weight=None; criterion=gini; max_depth=20; max_features=0.3; max_samples=0.9576492590949324; min_samples_leaf=6; min_samples_split=67; n_estimators=300
+Random Forest,v2,8,0.7136,0.014,0.8905,0.1108,class_weight=None; criterion=gini; max_depth=10; max_features=0.3; max_samples=0.527731231534285; min_samples_leaf=5; min_samples_split=2; n_estimators=300
+Random Forest,v2,9,0.7143,0.0145,0.8907,0.1107,class_weight=None; criterion=gini; max_depth=11; max_features=0.3; max_samples=0.3986469574823338; min_samples_leaf=9; min_samples_split=21; n_estimators=300
+Random Forest,v2,10,0.7125,0.015,0.8905,0.111,class_weight=None; criterion=gini; max_depth=18; max_features=sqrt; max_samples=0.8400056482608113; min_samples_leaf=23; min_samples_split=22; n_estimators=300
+Random Forest,v2,11,0.7134,0.0145,0.891,0.1107,class_weight=None; criterion=gini; max_depth=17; max_features=sqrt; max_samples=0.5473365746526999; min_samples_leaf=11; min_samples_split=53; n_estimators=300
+Random Forest,v2,12,0.7145,0.0146,0.8911,0.1104,class_weight=None; criterion=gini; max_depth=15; max_features=0.3; max_samples=0.349146956708797; min_samples_leaf=8; min_samples_split=34; n_estimators=300
+Random Forest,v2,13,0.7145,0.0144,0.8914,0.1104,class_weight=None; criterion=gini; max_depth=17; max_features=sqrt; max_samples=0.7795972080476068; min_samples_leaf=9; min_samples_split=23; n_estimators=300
+Random Forest,v2,14,0.7142,0.0141,0.891,0.1104,class_weight=None; criterion=gini; max_depth=16; max_features=0.3; max_samples=0.8662072647110575; min_samples_leaf=10; min_samples_split=60; n_estimators=300
+Random Forest,v2,15,0.7141,0.0149,0.8911,0.1106,class_weight=None; criterion=gini; max_depth=18; max_features=sqrt; max_samples=0.6383715645051736; min_samples_leaf=12; min_samples_split=9; n_estimators=300
+Random Forest,v2,16,0.7144,0.0148,0.891,0.1105,class_weight=None; criterion=gini; max_depth=16; max_features=0.3; max_samples=0.31223324644539896; min_samples_leaf=9; min_samples_split=29; n_estimators=300
+Random Forest,v2,17,0.7125,0.0148,0.8903,0.111,class_weight=None; criterion=gini; max_depth=14; max_features=0.3; max_samples=0.33006931594365135; min_samples_leaf=10; min_samples_split=91; n_estimators=300
+Random Forest,v2,18,0.7141,0.0146,0.8914,0.1103,class_weight=None; criterion=gini; max_depth=18; max_features=sqrt; max_samples=0.8518977391571072; min_samples_leaf=8; min_samples_split=16; n_estimators=300
+Random Forest,v2,19,0.7142,0.0142,0.891,0.1104,class_weight=None; criterion=gini; max_depth=17; max_features=0.3; max_samples=0.42276446929346545; min_samples_leaf=9; min_samples_split=12; n_estimators=300
+Random Forest,v2,20,0.7145,0.0143,0.8912,0.1103,class_weight=None; criterion=gini; max_depth=15; max_features=0.3; max_samples=0.46270232650593807; min_samples_leaf=6; min_samples_split=41; n_estimators=300
+Random Forest,v2,21,0.7143,0.0139,0.8909,0.1104,class_weight=None; criterion=gini; max_depth=15; max_features=0.3; max_samples=0.4145436623737499; min_samples_leaf=5; min_samples_split=9; n_estimators=300
+Random Forest,v2,22,0.7143,0.0145,0.8912,0.1104,class_weight=None; criterion=gini; max_depth=15; max_features=0.3; max_samples=0.31224122084692985; min_samples_leaf=6; min_samples_split=56; n_estimators=300
+Random Forest,v2,23,0.7145,0.0144,0.8912,0.1103,class_weight=None; criterion=gini; max_depth=16; max_features=0.3; max_samples=0.4942964098403213; min_samples_leaf=5; min_samples_split=31; n_estimators=300
+Random Forest,v2,24,0.7146,0.0145,0.8912,0.1103,class_weight=None; criterion=gini; max_depth=15; max_features=0.3; max_samples=0.5163626759012236; min_samples_leaf=7; min_samples_split=33; n_estimators=300
