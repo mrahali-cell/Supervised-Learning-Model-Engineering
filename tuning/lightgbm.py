@@ -1,4 +1,4 @@
-"""LightGBM: diagnosis before tuning (Hadiqa).
+"""LightGBM: diagnosis before tuning.
 
 How LightGBM learns (gradient boosting, S4): trees are built one after the
 other, and each new tree is fitted to the errors (the gradients of the
