@@ -56,20 +56,21 @@ src/                  LIBRARY: imported by everything else, never trains a model
     fairness.py         fairness audit and mitigation
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py         stage 1: all models with default parameters
-    random_forest.py    random forest diagnosis: baseline table + validation curves (Manel)
-    lightgbm.py         LightGBM diagnosis: baseline table + validation curves (Hadiqa)
+    random_forest.py    random forest diagnosis: baseline table + validation curves
+    lightgbm.py         LightGBM diagnosis: baseline table + validation curves
     tune.py             stage 2: Optuna search + MLflow tracking, one search space per model
     results/            NUMBERS: everything the scripts produce
-        v1/best_params.json         first Optuna run, all three models (Soumaya)
+        v1/best_params.json         first Optuna run, all three models
         v2/best_params.json         tuning after the diagnosis, all three models (used now)
+        logistic_regression         baseline.csv, curves.csv, elastic_net.csv, interactions_folds csv, lasso_path.csv, lasso_scores.csv, lasso_zeros.csv, search_trials.csv, search.csv, figures/*.png
         random_forest/              baseline.csv, curves.csv, curves/*.png
-        lightgbm/                   same files for LightGBM (Hadiqa)
+        lightgbm/                   same files for LightGBM 
 notebooks/            EXPLANATIONS: read the results files and comment them, no training
     01_eda.ipynb                  EDA: every data decision and why
     02_logistic_regression.ipynb  one notebook per model: baseline, diagnosis, curves, tuning, findings
-    03_random_forest.ipynb
+    03_random_forest.ipynb        
     04_lightgbm.ipynb
-    05_calibration_explain_test.ipynb  final model (LightGBM v2): calibration, then SHAP and the test set
+    05_calibration_explain.ipynb  final model (LightGBM v2): calibration, then SHAP
     06_fairness.ipynb             fairness audit by sex: v1 and v2 (recalibrated LightGBM), before / after
     07_test.ipynb                 final evaluation on the test set (once) and model card
 reports/              calibration and fairness outputs (json + figures)
