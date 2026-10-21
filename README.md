@@ -17,8 +17,8 @@ reduce part of that bias, and show what it costs.
 - **Hypothesis:** the model rebuilds the gender gap through proxies (marital
   status, occupation, hours worked).
 
-Every finding and decision, with its numbers, is in
-[`docs/findings_log.md`](docs/findings_log.md).
+Every finding, decision and number is documented and justified in the report
+([`report/report.pdf`](report/report.pdf)); the notebooks explain each result.
 
 ---
 
@@ -26,15 +26,15 @@ Every finding and decision, with its numbers, is in
 
 | # | Step | Course | Where | Status |
 |---|---|---|---|---|
-| 1 | Use case and framing | Session 1 | this README, `docs/findings_log.md` | done |
+| 1 | Use case and framing | Session 1 | this README, `report/report.pdf` | done |
 | 2 | EDA and cleaning (leakage, duplicates, rare categories) | Session 1 | `notebooks/01_eda.ipynb`, `src/data.py` | done |
 | 3 | Stratified split: 80% development / 20% test, test locked | Session 1 | `src/data.py` | done |
 | 4 | Pipeline: preprocessing + feature engineering | Session 5 | `src/pipeline.py` | done |
 | 5 | Baseline models: Dummy, logistic regression, random forest, LightGBM | Sessions 2-4 | `tuning/baseline.py` | done |
-| 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/random_forest.py`, `notebooks/0*_*.ipynb` | random forest, LR & LightGBM done |
+| 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/logistic_regression.py`, `tuning/random_forest.py`, `tuning/lightgbm.py`, notebooks 02-04 | random forest, LR & LightGBM done |
 | 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for all three models (used from now on) |
 | 8 | Calibration | Session 7 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on v2 (LightGBM v2 needs no recalibration) |
-| 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on LightGBM v2 (development set) |
+| 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py`, `src/shap_local.py`, `notebooks/05_calibration_explain_test.ipynb` | done on LightGBM v2 (development set) |
 | 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py`, `notebooks/06_fairness.ipynb` | done on the development set, V1 & V2 LightGBM |
 | 11 | Test set, once: final metrics, fairness before / after, model card | | `src/evaluate.py`, `notebooks/07_test.ipynb` | done (2026-10-21) |
 
@@ -53,40 +53,37 @@ src/                  LIBRARY: imported by everything else, never trains a model
     models.py           the models: defaults (baseline) and build_model(name, params)
     cv.py               cross-validation helpers: out-of-fold scores, train vs validation scores
     evaluate.py         calibration, SHAP explanations, final test-set evaluation
+    shap_local.py       local SHAP explanations of four people chosen by rule
     fairness.py         fairness audit and mitigation
-    
 tuning/               EXPERIMENTS: every training and tuning script you run
-    baseline.py         stage 1: all models with default parameters
-    lightgbm.py         LightGBM diagnosis: baseline table + validation curves
-    random_forest.py    random forest diagnosis: baseline table + validation curves
-    mlflow_history.py   Optuna history from MLflow: every tuning trial of the three models, v1 and v2
-    logistic_regression.py LR diagnosis: baseline table + validation curves
-    tune.py             stage 2: Optuna search + MLflow tracking, one search space per model
-    results/            NUMBERS: everything the scripts produce
-        lightgbm/       figures, baseline and curves parameters in csv
-        logistic_regression/ baseline.csv, curves.csv, elastic_net.csv, interactions_folds, csv, lasso_path.csv, lasso_scores.csv, lasso_zeros.csv, search_trials.csv, search.csv, figures/*.png
-        mlflow/         figures of optuna flow for all models and csv results
-        random_forest/  baseline.csv, curves.csv, curves/*.png
-        v1/best_params.json         first Optuna run, all three models
-        v2/best_params.json         tuning after the diagnosis, all three models (used now)
-    
+    baseline.py              stage 1: all models with default parameters
+    logistic_regression.py   LR diagnosis: baseline, C curves (L1 / L2), Lasso, Elastic Net, interactions, search methods
+    random_forest.py         random forest diagnosis: baseline table + validation curves
+    lightgbm.py              LightGBM diagnosis: baseline table + validation curves
+    tune.py                  stage 2: Optuna search + MLflow tracking, one search space per model
+    mlflow_history.py        Optuna history from MLflow: every tuning trial of the three models, v1 and v2
+    results/                 NUMBERS: everything the scripts produce
+        v1/best_params.json      first Optuna run, all three models
+        v2/best_params.json      tuning after the diagnosis, all three models (used now)
+        logistic_regression/     baseline, curves, Lasso, Elastic Net, interactions and search results (csv + png)
+        random_forest/           baseline.csv, curves.csv, curves/*.png
+        lightgbm/                baseline.csv, curves.csv, curves/*.png
+        mlflow/                  history.png, trials.csv, summary.csv (every Optuna trial)
 notebooks/            EXPLANATIONS: read the results files and comment them, no training
-    01_eda.ipynb                  EDA: every data decision and why
-    02_logistic_regression.ipynb  one notebook per model: baseline, diagnosis, curves, tuning, findings
-    03_random_forest.ipynb        
+    01_eda.ipynb                        EDA: every data decision and why
+    02_logistic_regression.ipynb        one notebook per model: baseline, diagnosis, curves, tuning, findings
+    03_random_forest.ipynb
     04_lightgbm.ipynb
-    05_calibration_explain.ipynb  final model (LightGBM v2): calibration, then SHAP
-    06_fairness.ipynb             fairness audit by sex: v1 and v2 (recalibrated LightGBM), before / after
-    07_test.ipynb                 final evaluation on the test set (once) and model card
-
-reports/              calibration and fairness outputs (json + figures)
-
-report/               pdf report lateX file and figures code
+    05_calibration_explain_test.ipynb   final model (LightGBM v2): calibration, then SHAP
+    06_fairness.ipynb                   fairness audit by sex: v1 and v2 (recalibrated LightGBM), before / after
+    07_test.ipynb                       final evaluation on the test set (once) and model card
+reports/              calibration, SHAP, fairness and test-set outputs (json + figures)
+report/               the LaTeX report: report.tex, report.pdf, make_figures.py, figures/
 requirements.txt      Python libraries
 ```
 
 **The rule:** `src/` = the tools, `tuning/` = the experiments, `tuning/results/` =
-their numbers, `notebooks/` = the explanations, `docs/findings_log.md` = the log.
+their numbers, `notebooks/` = the explanations, `report/` = the write-up.
 
 **No leakage:** anything that learns from the data (imputation, scaling, one-hot
 encoding) happens after the split, inside the Pipeline, re-fitted in each
@@ -146,13 +143,18 @@ instead of `.venv`, and it passes no argument (`baseline`, `curves`...).
 | `python3 -m tuning.random_forest baseline` | Dummy, one tree, three forests (+ v2 when it exists): train vs validation | `tuning/results/random_forest/baseline.csv` |
 | `python3 -m tuning.random_forest curves` | One validation curve per random forest setting (about 10 min) | `curves.csv`, `curves/*.png` |
 | `python3 -m tuning.random_forest curves --param max_depth` | One curve only | same files, that curve replaced |
+| `python3 -m tuning.logistic_regression baseline` (then `curves`, `lasso`, `interactions`, `search`) | Logistic regression diagnosis | `tuning/results/logistic_regression/` |
+| `python3 -m tuning.lightgbm baseline` (then `curves`) | LightGBM diagnosis | `tuning/results/lightgbm/` |
 | `python3 -m tuning.tune --version v2 --model rf` | Optuna, 25 trials (`--trials N` to change); `--model` = `lr`, `rf` or `lgbm`, repeatable; no `--model` = all three | `tuning/results/v2/best_params.json` + MLflow runs |
 | `python3 -m src.evaluate calibration` | Calibration on out-of-fold predictions: Brier, ECE, Platt, isotonic, by sex | `reports/calibration_dev.json`, `reports/figures/`, `reports/calibration_lightgbm_comparison.png` |
 | `python3 -m src.evaluate shap` | SHAP (TreeSHAP, out-of-fold) on the candidate LightGBM: importance, beeswarm, by sex, dependence | `reports/shap_dev.json`, `reports/figures/shap_*_dev.png` |
+| `python3 -m src.shap_local` | Local SHAP explanations of four people chosen by rule | `reports/shap_local_dev.json`, `reports/figures/shap_local_dev.png` |
 | `python3 -m src.evaluate test --dry-run --out <folder>` | Checks the final evaluation on a development hold-out, without the test set | files in `<folder>` |
 | `python3 -m src.evaluate test` | Final evaluation on the test set, **once** (refuses to run again without `--force`) | `reports/test_results.json`, `reports/figures/test_*.png` |
 | `python3 -m src.fairness audit` | Fairness audit by sex + mitigation (development set) | `reports/fairness_dev.json` (one set of rows per version), `reports/fairness_details_dev_<version>.json` and `reports/figures/fairness_by_sex_dev_<version>.png` (no suffix for v1) |
 | `mlflow ui --backend-store-uri sqlite:///mlflow.db` | Browse every Optuna trial | opens in the browser |
+| `python3 -m tuning.mlflow_history` | Exports every Optuna trial from MLflow | `tuning/results/mlflow/` |
+| `python3 -m report.make_figures`, then compile `report/report.tex` (LaTeX) | Rebuilds the report figures and the PDF | `report/report.pdf` |
 
 **Notebooks:** open them in VS Code and click **Run All**. They only read the
 files in `tuning/results/` and `reports/`, so they run in seconds.
