@@ -51,8 +51,10 @@ src/                  LIBRARY: imported by everything else, never trains a model
     cv.py               cross-validation helpers: out-of-fold scores, train vs validation scores
     data.py             load -> clean (fixed rules from the EDA) -> split; FEATURES, SENSITIVE, TARGET
     evaluate.py         calibration, SHAP explanations, final test-set evaluation
-    shap_local.py       local SHAP explanations of four people chosen by rule
     fairness.py         fairness audit and mitigation
+    models.py           the models: defaults (baseline) and build_model(name, params)
+    pipeline.py         feature engineering + preprocessing + model, as one Pipeline
+    shap_local.py       local SHAP explanations of four people chosen by rule
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py              stage 1: all models with default parameters
     logistic_regression.py   LR diagnosis: baseline, C curves (L1 / L2), Lasso, Elastic Net, interactions, search methods

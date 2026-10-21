@@ -22,3 +22,6 @@ mlflow.db
 
 # logs & docs
 docs/
+
+# empty-folder placeholders
+.gitkeep
