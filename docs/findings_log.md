@@ -4,7 +4,7 @@ Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
 (7 min + 3 min Q&A). Last updated 2026-10-21 (after the LightGBM
 diagnosis and tuning v2, and the logistic regression tuning v2: v2 now
-complete for the three models).
+complete for the three models; calibration on v2).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -285,7 +285,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** project requirement 7 (experiment tracking).
 - **Use in:** R tracking (take screenshots). S backup.
 
-### F22 · Calibration: Random Forest very over-confident, LightGBM mildly, Logistic Regression fine
+### F22 · Calibration: Random Forest very over-confident, LightGBM mildly, Logistic Regression fine (v1; updated by F41)
 - **Finding:** the tuned Random Forest says "0.91" for people of whom only 81%
   really are high earners; its curve sits far below the diagonal. LightGBM is
   slightly over-confident. Logistic Regression is already calibrated. The Random
@@ -299,7 +299,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S7 reliability diagram, Brier, ECE, over-confidence.
 - **Use in:** R calibration. S calibration slide.
 
-### F23 · Calibration: Platt and isotonic fix it without hurting the ranking much
+### F23 · Calibration: Platt and isotonic fix it without hurting the ranking much (v1; updated by F41)
 - **Finding:** recalibration brings the Random Forest and LightGBM to the level
   of Logistic Regression. Platt keeps the ranking (monotone map); isotonic gives
   the lowest ECE but its step function creates ties and costs a little PR-AUC.
@@ -315,7 +315,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   quality, not ranking".
 - **Use in:** R calibration. S calibration slide.
 
-### F24 · Calibration by sex: raw probabilities over-predict, more for women in relative terms
+### F24 · Calibration by sex: raw probabilities over-predict, more for women in relative terms (v1; updated by F41)
 - **Finding:** before recalibration the Random Forest and LightGBM predict
   higher probabilities than the observed rates for both sexes. In relative terms
   the gap is larger for women, so a raw score does not mean the same thing for
@@ -635,7 +635,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   exists for all three models, so the project switches to v2
   (`BEST_PARAMS_VERSION = "v2"` in `src/config.py`). Across the three
   families, LightGBM v2 ranks best and has the best probabilities; the
-  differences are small next to the fold noise (section 3d).
+  differences are small next to the fold noise (section 3b-v2).
 - **Evidence:** `python3 -m tuning.tune --version v2 --model lr` (Optuna TPE,
   seed 42, 25 trials; fixed: L2, no class weights; searched: C 0.01-100, log).
   Best: C = 6.80 (v1: 5.18) (`tuning/results/v2/best_params.json`, logistic
@@ -646,11 +646,44 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   0.7019 (a small C).
 - **Caveat:** best trial picked on the same folds (S5), negligible on a flat
   curve. The married x hours interaction (F37) is not part of v2.
-- **Next:** re-run calibration (`python3 -m src.evaluate calibration`) and the
-  fairness audit (`python3 -m src.fairness audit`) on v2: sections 3c and
-  F22-F27 still describe v1.
+- **Next:** calibration re-run on v2 on 2026-10-21 (F41). Still to re-run on
+  v2: the fairness audit (`python3 -m src.fairness audit`): section 3d and
+  F25-F27 still describe v1.
 - **Course link:** S2 regularization; S5 validation curves and TPE search.
 - **Use in:** R tuning (logistic regression) and model choice. S tuning slide.
+
+### F41 · Calibration v2: LightGBM v2 is calibrated without recalibration; the class weight caused v1's over-confidence
+- **Finding:** with no class weight, LightGBM v2's raw probabilities are as
+  well calibrated as the logistic regression's, for everyone and for each sex.
+  Platt scaling now changes nothing, and isotonic only costs ranking. So the
+  over-confidence of v1 (F22) and its larger relative error for women (F24)
+  came from `scale_pos_weight`, not from boosting. The random forest confirms
+  it: without its class weights, its ECE falls from 0.132 to 0.011. All three
+  tuned v2 models are calibrated before recalibration.
+- **Evidence:** `python3 -m src.evaluate calibration` with
+  `BEST_PARAMS_VERSION = "v2"`, out-of-fold, development set
+  (`reports/calibration_dev.json`,
+  `reports/calibration_lightgbm_comparison.png` (LightGBM raw vs Platt vs
+  isotonic: the isotonic histogram is spiky, i.e. ties), section 3c; explained in `notebooks/05_calibration_explain_test.ipynb`,
+  section 1). LightGBM
+  raw: ECE 0.0058 (v1 0.030), Brier 0.1096 (v1 0.1112), top 10% predicted
+  0.807 vs observed 0.812 (v1 0.835 vs 0.813). Platt: ECE 0.0057, Brier
+  0.1096, PR-AUC 0.7183 -> 0.7180. Isotonic: ECE 0.0010, PR-AUC 0.7183 ->
+  0.7135. By sex, raw: women 0.112 predicted vs 0.109 observed, men 0.302 vs
+  0.304 (v1: 0.132 and 0.337); ECE 0.010 for both. Logistic regression raw
+  ECE 0.0059; random forest raw ECE 0.0109 (v1 0.132), Brier 0.1104.
+- **Decision (to confirm with the team):** candidate final model = **LightGBM
+  v2 with raw probabilities**, no Platt. `src/fairness.py` still applies Platt
+  to LightGBM: with v2 this gives the same probabilities, so it is harmless;
+  remove it for simplicity or keep it as a safety step.
+- **Caveat:** parameters tuned on these same folds (slightly optimistic, S5);
+  the test-set calibration check is still to do. Along the curve by sex, small
+  deviations remain in both directions (highest-scored women slightly
+  under-predicted), within the noise of small bins.
+- **Course link:** S7 reliability diagram, Brier, ECE, Platt vs isotonic,
+  calibration by segment; S6 class weights cost calibration.
+- **Use in:** R calibration (replaces the v1 numbers of F22-F24). S calibration
+  slide.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
@@ -706,7 +739,7 @@ Reference (defaults, engineered features, section 3): PR-AUC 0.708 / 0.711 /
 
 ---
 
-## 3d. Tuned results v2 (search spaces built from the validation curves)
+## 3b-v2. Tuned results v2 (search spaces built from the validation curves)
 
 Same protocol as 3b (Optuna TPE, seed 42, 25 trials, mean 5-fold PR-AUC), with
 each model's search space read from its validation curves (F36, F39, F40).
@@ -732,12 +765,49 @@ no paired test between families yet).
 
 ## 3c. Calibration of the tuned models (development set, out-of-fold)
 
-Predictions are out-of-fold (5 folds, best parameters of section 3b).
-Calibrated rows come from a second 5-fold CV on those predictions. ECE uses 10
-equal-frequency bins. "Top bin" = the 10% of people with the highest predicted
-probability. Run: `python -m src.evaluate calibration`. **PROVISIONAL**
-(tuned on the same folds; test-set check pending). **Computed on v1** (section
-3b): to re-run on v2 (section 3d).
+Predictions are out-of-fold (5 folds). Calibrated rows come from a second
+5-fold CV on those predictions. ECE uses 10 equal-frequency bins. "Top bin" =
+the 10% of people with the highest predicted probability. PR-AUC here is
+computed on the pooled out-of-fold predictions (not the mean of the folds).
+Run: `python -m src.evaluate calibration` (uses `BEST_PARAMS_VERSION`).
+**PROVISIONAL** (tuned on the same folds; test-set check pending).
+
+### Tuned v2 (section 3b-v2), run 2026-10-21: `reports/calibration_dev.json`
+
+All people:
+
+| Model | Variant | Brier | ECE | PR-AUC | ROC-AUC | Top bin predicted | Top bin observed |
+|---|---|---|---|---|---|---|---|
+| Logistic Regression | raw | 0.1113 | 0.0059 | 0.7080 | 0.8887 | 0.818 | 0.804 |
+| Logistic Regression | Platt | 0.1114 | 0.0060 | 0.7076 | 0.8887 | 0.816 | 0.804 |
+| Logistic Regression | isotonic | 0.1114 | 0.0022 | 0.7030 | 0.8877 | 0.807 | 0.805 |
+| Random Forest | raw | 0.1104 | 0.0109 | 0.7142 | 0.8914 | 0.790 | 0.810 |
+| Random Forest | Platt | 0.1103 | 0.0046 | 0.7140 | 0.8913 | 0.812 | 0.811 |
+| Random Forest | isotonic | 0.1104 | 0.0026 | 0.7087 | 0.8902 | 0.811 | 0.809 |
+| LightGBM | raw | 0.1096 | 0.0058 | 0.7183 | 0.8927 | 0.807 | 0.812 |
+| LightGBM | Platt | 0.1096 | 0.0057 | 0.7180 | 0.8927 | 0.807 | 0.811 |
+| LightGBM | isotonic | 0.1097 | 0.0010 | 0.7135 | 0.8919 | 0.815 | 0.814 |
+
+By sex (mean predicted probability vs observed rate; observed: women 0.109,
+men 0.304):
+
+| Model | Variant | Women predicted | Men predicted | ECE women | ECE men |
+|---|---|---|---|---|---|
+| Logistic Regression | raw | 0.114 | 0.301 | 0.015 | 0.011 |
+| Random Forest | raw | 0.114 | 0.302 | 0.018 | 0.008 |
+| Random Forest | Platt | 0.110 | 0.304 | 0.012 | 0.005 |
+| LightGBM | raw | 0.112 | 0.302 | 0.010 | 0.010 |
+| LightGBM | Platt | 0.112 | 0.302 | 0.010 | 0.010 |
+| LightGBM | isotonic | 0.112 | 0.302 | 0.012 | 0.007 |
+
+Reading (F41): with v2 no model uses class weights, and all three raw models
+are calibrated. **LightGBM v2 raw** has the lowest Brier, an ECE equal to the
+logistic regression's, both sexes close to their observed rates, and Platt
+changes nothing: the candidate is now **LightGBM v2 with its raw
+probabilities**. Not final: the fairness audit and the test-set check come
+first.
+
+### Tuned v1 (section 3b), run 2026-10-20: kept for comparison (F22-F24)
 
 All people:
 
@@ -765,10 +835,8 @@ men 0.304):
 | LightGBM | Platt | 0.112 | 0.302 | 0.009 | 0.012 |
 | LightGBM | isotonic | 0.113 | 0.302 | 0.010 | 0.007 |
 
-Reading: the best candidate so far is **LightGBM + Platt** (lowest Brier,
-ranking kept, ECE 0.008, both sexes close to their observed rates).
-Logistic Regression is simpler and already calibrated but about 0.011 PR-AUC
-lower. Not final: the fairness audit and the test-set check come first.
+Reading at the time: the best candidate was **LightGBM + Platt** (lowest
+Brier, ranking kept, ECE 0.008, both sexes close to their observed rates).
 
 ---
 
@@ -911,7 +979,7 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Calibration protocol: out-of-fold predictions on the development set, Platt and isotonic scored by a second 5-fold CV, reliability by sex; test set not used | Soumaya with Claude | Done in `src/evaluate.py` (`python -m src.evaluate calibration`), merged in main |
 | EDA notebook aligned with the audit case: new Steps 4d (groups, proxies), 5 (framing), 7b (group sizes) and 8 (bias sources, hand-over); target shown as `high_income` | Soumaya with Claude, 2026-10-19 | Done, merged in main together with Manel's Step 9 preview |
 | Fairness protocol: sex as the audited attribute; equalized odds primary and four-fifths rule as legal screen (fixed before the results); one mitigation, `ThresholdOptimizer`, cross-fitted on out-of-fold scores; race only audited | Soumaya with Claude | Done on the development set in `src/fairness.py` (`python -m src.fairness audit`), merged in main; test-set evaluation pending |
-| Candidate final model: LightGBM + Platt scaling; logistic regression as the transparent benchmark; the random forest tuned to show bias vs variance | Proposed by Claude from F19-F24; Manel agrees (2026-10-19) | Provisional: confirm after the fairness audit and the single test-set evaluation |
+| Candidate final model: LightGBM + Platt scaling; logistic regression as the transparent benchmark; the random forest tuned to show bias vs variance | Proposed by Claude from F19-F24; Manel agrees (2026-10-19) | Updated 2026-10-21: LightGBM **v2 with raw probabilities** (Platt no longer needed, F41), to confirm with the team; then the fairness audit and the single test-set evaluation |
 | Tuning protocol: Optuna (TPE, seed 42), 25 trials per model, objective = mean 5-fold CV PR-AUC; class weighting is a tuned hyperparameter; MLflow logging in a SQLite file | Soumaya with Claude | Done (first in `src/train.py`, now `tuning/tune.py`); results in `tuning/results/v1/` |
 | Engineered features: is_married, has_degree, part_time, overtime, age_squared | Soumaya with Claude, 2026-10-18 | In `src/pipeline.py`, merged in main |
 | Cutoff: best-F1 point for the neutral comparison; clients choose their own | Proposed | Open: confirm with the team |
@@ -919,10 +987,10 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
 | Random forest diagnosis and tuning v2 (section 3e): search space read from the validation curves; final random forest = tuned v2 | Manel, 2026-10-20 | Done (F32, F36); `tuning/results/v2/best_params.json` |
 | Logistic regression diagnosis (F37): baseline, C curves for L1 and L2, Elastic Net and Lasso zeros, interactions, search methods; same pattern as `tuning/random_forest.py` | Soumaya with Claude, 2026-10-20 | Done: `tuning/logistic_regression.py`, `tuning/results/logistic_regression/`, `notebooks/02_logistic_regression.ipynb`; uncommitted |
-| Logistic regression tuning v2 search space: C 0.01-100 (log), penalty fixed L2, class_weight fixed None; no Elastic Net | Proposed by Soumaya with Claude from the curves (F37) | Open: team agreement to edit `suggest_params()` in `tuning/tune.py`, then `python3 -m tuning.tune --version v2 --model lr`; not run |
+| Logistic regression tuning v2 search space: C 0.01-100 (log), penalty fixed L2, class_weight fixed None; no Elastic Net | Proposed by Soumaya with Claude from the curves (F37) | Done 2026-10-21 (F40): C = 6.80, same scores as v1 |
 | Interaction rule, fixed before the run: an interaction is kept only if it adds >= 0.001 mean validation PR-AUC over tuned v1 AND is better in >= 4 of 5 folds | Soumaya with Claude, 2026-10-20 | Applied: only married x hours passes (F37) |
 | Add married x hours (`is_married` x `hours-per-week`) to the logistic regression Pipeline | Proposed (F37) | Open: needs a change in `src/pipeline.py` (shared) or an LR-only Pipeline, team agreement, and a fairness re-check by sex |
-| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | To do: `tuning/lightgbm.py` (same pattern as `tuning/random_forest.py`), `notebooks/04_lightgbm.ipynb`, then `python3 -m tuning.tune --version v2 --model lgbm`; if v2 becomes the final model, re-run calibration and the fairness audit on it |
+| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | Done 2026-10-21 (F38, F39); calibration re-run on v2 (F41); fairness audit on v2 still to do |
 
 ---
 

@@ -33,7 +33,7 @@ Every finding and decision, with its numbers, is in
 | 5 | Baseline models: Dummy, logistic regression, random forest, LightGBM | Sessions 2-4 | `tuning/baseline.py` | done |
 | 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/random_forest.py`, `notebooks/0*_*.ipynb` | random forest, LR & LightGBM done |
 | 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for all three models (used from now on) |
-| 8 | Calibration | Session 7 | `src/evaluate.py` | done on v1; to re-run on v2 |
+| 8 | Calibration | Session 7 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on v2 (LightGBM v2 needs no recalibration) |
 | 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py` | to do |
 | 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py` | done on the development set (v1); to re-run on v2 |
 | 11 | Test set, once: final metrics, fairness before / after, model card | | | to do |
@@ -69,6 +69,7 @@ notebooks/            EXPLANATIONS: read the results files and comment them, no 
     02_logistic_regression.ipynb  one notebook per model: baseline, diagnosis, curves, tuning, findings
     03_random_forest.ipynb
     04_lightgbm.ipynb
+    05_calibration_explain_test.ipynb  final model (LightGBM v2): calibration, then SHAP and the test set
 reports/              calibration and fairness outputs (json + figures)
 docs/findings_log.md  the log of every finding and decision (for the report and the oral)
 requirements.txt      Python libraries
@@ -136,7 +137,7 @@ instead of `.venv`, and it passes no argument (`baseline`, `curves`...).
 | `python3 -m tuning.random_forest curves` | One validation curve per random forest setting (about 10 min) | `curves.csv`, `curves/*.png` |
 | `python3 -m tuning.random_forest curves --param max_depth` | One curve only | same files, that curve replaced |
 | `python3 -m tuning.tune --version v2 --model rf` | Optuna, 25 trials (`--trials N` to change); `--model` = `lr`, `rf` or `lgbm`, repeatable; no `--model` = all three | `tuning/results/v2/best_params.json` + MLflow runs |
-| `python3 -m src.evaluate calibration` | Calibration on out-of-fold predictions: Brier, ECE, Platt, isotonic, by sex | `reports/calibration_dev.json`, `reports/figures/` |
+| `python3 -m src.evaluate calibration` | Calibration on out-of-fold predictions: Brier, ECE, Platt, isotonic, by sex | `reports/calibration_dev.json`, `reports/figures/`, `reports/calibration_lightgbm_comparison.png` |
 | `python3 -m src.fairness audit` | Fairness audit by sex + mitigation (development set) | `reports/fairness_dev.json`, `reports/figures/` |
 | `mlflow ui --backend-store-uri sqlite:///mlflow.db` | Browse every Optuna trial | opens in the browser |
 
@@ -192,7 +193,7 @@ scaling; categories: "Unknown", then one-hot) -> your model.
 | Final logistic regression | Tuned v2 (C = 6.80, L2): same as v1, 0.708 PR-AUC, Brier 0.111 (F40) |
 | Final random forest | Tuned v2: same ranking as v1 (0.715 PR-AUC), Brier 0.110 instead of 0.136 (F36) |
 | Final LightGBM | Tuned v2: same ranking as v1 (0.719 PR-AUC), smaller gap, Brier 0.1096 instead of 0.1112 (F39) |
-| Candidate final model | LightGBM + Platt scaling; logistic regression as the transparent benchmark |
+| Candidate final model | LightGBM v2 with raw probabilities (already calibrated, F41); logistic regression as the transparent benchmark |
 
 ---
 

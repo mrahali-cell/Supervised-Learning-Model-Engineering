@@ -136,6 +136,25 @@ def save_figures(y, sex, preds):
     fig.savefig(FIGURES_DIR / "calibration_by_sex.png", dpi=150)
     plt.close(fig)
 
+    # D. Candidate model only: raw (baseline) vs Platt vs isotonic, same layout as A
+    titles = {"raw": "raw (no recalibration)", "platt": "Platt scaling", "isotonic": "isotonic"}
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7), height_ratios=[3, 1.3], sharex="col")
+    for i, variant in enumerate(VARIANTS):
+        p = preds["LightGBM"][variant]
+        m = probability_metrics(y, p)
+        if variant != "raw":  # the raw curve, faint, as the reference
+            plot_curve(axes[0, i], y, preds["LightGBM"]["raw"], "raw", "#bbbbbb")
+        plot_curve(axes[0, i], y, p, variant, COLORS[variant])
+        style_reliability(axes[0, i], f"{titles[variant]}\nECE {m['ece']:.4f} | "
+                          f"Brier {m['brier']:.4f} | PR-AUC {m['pr_auc']:.4f}", i == 0)
+        axes[1, i].hist(p, bins=30, color=COLORS[variant], alpha=0.8)
+        axes[1, i].set(xlabel="Predicted probability", xlim=(0, 1))
+    axes[1, 0].set_ylabel("People")
+    fig.suptitle("LightGBM (tuned): before and after recalibration (out-of-fold, development set)")
+    fig.tight_layout()
+    fig.savefig(REPORTS_DIR / "calibration_lightgbm_comparison.png", dpi=150)
+    plt.close(fig)
+
 
 def run_calibration():
     dev_df, _ = load_data()  # the test set is left untouched
@@ -185,6 +204,7 @@ def run_calibration():
                 key = f"{r['model']}_{r['variant']}".replace(" ", "_")
                 mlflow.log_metrics({f"{key}_brier": r["brier"], f"{key}_ece": r["ece"]})
         mlflow.log_artifacts(str(FIGURES_DIR), artifact_path="figures")
+        mlflow.log_artifact(str(REPORTS_DIR / "calibration_lightgbm_comparison.png"))
         mlflow.log_artifact(str(REPORTS_DIR / "calibration_dev.json"))
     print(f"\nFigures in {FIGURES_DIR}; metrics in {REPORTS_DIR / 'calibration_dev.json'}")
     return result
