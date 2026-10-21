@@ -36,7 +36,7 @@ Every finding, decision and number is documented and justified in the report
 | 8 | Calibration | Session 7 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on v2 (LightGBM v2 needs no recalibration) |
 | 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py`, `src/shap_local.py`, `notebooks/05_calibration_explain_test.ipynb` | done on LightGBM v2 (development set) |
 | 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py`, `notebooks/06_fairness.ipynb` | done on the development set, V1 & V2 LightGBM |
-| 11 | Test set, once: final metrics, fairness before / after, model card | | `src/evaluate.py`, `notebooks/07_test.ipynb` | done (2026-10-21) |
+| 11 | Test set, once: final metrics, fairness before / after, model card | | `src/evaluate.py`, `notebooks/07_test.ipynb` | done on the test set |
 
 5-fold stratified cross-validation on the development set measures every
 comparison in steps 5 to 8. The test set is opened only once, in step 11.
@@ -228,6 +228,6 @@ scaling; categories: "Unknown", then one-hot) -> your model.
 
 ## Git workflow
 
-- Each member works on their own branch (`manel/dev`, `soumaya/dev`, `hadiqa/dev`).
+- Each member works on their own branch (`manel/dev`, `soumaya/dev`, `hadiqa/dev`, then everything merged to `main` branch).
 - Changes reach `main` through a pull request.
 - Never commit the data (`*.csv` is ignored, except the small result tables in `tuning/results/`).
