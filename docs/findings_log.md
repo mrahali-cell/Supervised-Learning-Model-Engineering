@@ -2,8 +2,8 @@
 
 Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
-(7 min + 3 min Q&A). Last updated 2026-10-20 (after the random forest
-tuning v2).
+(7 min + 3 min Q&A). Last updated 2026-10-21 (after the LightGBM
+diagnosis and tuning v2).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -84,7 +84,11 @@ To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
 - (to complete)
 
 ### Hadiqa
-- (to complete)
+- **LightGBM:** diagnosis before tuning (F38, `tuning/lightgbm.py`,
+  `notebooks/04_lightgbm.ipynb`): baseline train vs validation, validation
+  curves (learning rate x trees, leaves, depth, leaf size, sampling, L1 / L2,
+  class weight); tuning v2 with a search space built from the curves (F39,
+  `suggest_params()` in `tuning/tune.py`, `tuning/results/v2/best_params.json`).
 
 ---
 
@@ -552,6 +556,78 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   bias/variance, validation curves, grid / random / TPE search; S6 class
   weights; S7 Brier score.
 - **Use in:** R tuning (logistic regression). S tuning slide.
+
+### F38 · LightGBM diagnosis: mild variance, at the ceiling; rate and trees go together, class weights only cost calibration
+- **Finding:** LightGBM's defaults overfit only a little (gap 0.04) and the
+  model sits at the same ceiling as the others: every validation curve peaks at
+  0.716-0.718. The learning rate and the number of trees must be read
+  together: the best validation is always at rate x trees of about 5 to 8, and
+  more steps overfit (unlike the forest, where more trees never hurt). The gap
+  can be halved for free (fewer leaves, a depth limit, larger leaves, strong
+  L1 / L2 penalties): only the train score drops. `scale_pos_weight` leaves the
+  ranking unchanged and damages the probabilities.
+- **Evidence:** `python3 -m tuning.lightgbm baseline | curves`, 5-fold CV,
+  results in `tuning/results/lightgbm/`, explained in
+  `notebooks/04_lightgbm.ipynb`. Train / validation PR-AUC (gap): defaults
+  0.757 / 0.7155 ± 0.011 (0.042), 6 inputs only 0.758 / 0.7155 (engineered
+  features add nothing, F15); tuned v1 0.740 / 0.7190 ± 0.012 (0.022), Brier
+  0.1112 vs 0.1101 at the defaults. Curves (one setting at a time, the others at
+  the defaults): learning rate x trees best 0.7170 (0.03, 200), 0.7165 (0.1,
+  50), 0.7163 (0.01, 800); 0.1 with 1,600 trees 0.672 (gap 0.24); 0.01 with 25
+  trees 0.686, Brier 0.156; 0.3 unstable (0.585 at 1,600 trees, fold std 0.06;
+  train score falls from 0.842 to 0.787; on fold 1, 17% of training scores
+  within 1e-6 of 0 or 1). num_leaves 4 / 16 / 255: 0.711 (gap 0.005) / 0.7169 /
+  0.694 (gap 0.18). max_depth 2: 0.709; 4: 0.7170 (gap 0.017); 8 and more = no
+  limit. min_child_samples 5-500: 0.714-0.716 (gap 0.047 -> 0.024). subsample
+  0.7-1.0: 0.716; 0.3: 0.712. colsample_bytree 0.4: 0.7181 (highest point,
+  +0.0026 vs 1.0). reg_alpha 10: 0.7168 (gap 0.021), 100: 0.703; reg_lambda
+  100: 0.7165 (gap 0.021), no effect up to 1. scale_pos_weight 1 / 1.5 / 2 /
+  3.2 / 5: PR-AUC 0.7155-0.7160, Brier 0.110 / 0.114 / 0.120 / 0.138 / 0.162.
+- **Caveat:** single curves around the defaults; the settings interact (v1's
+  0.719 beats every single curve by combining a slow rate with sampling, within
+  the noise). The rate 0.3 points vary slightly between runs (multithreading);
+  all others are reproducible.
+- **Next:** done on 2026-10-21: tuning v2 with a search space built from these
+  curves (F39).
+- **Course link:** S4 gradient boosting (learning rate, number of trees); S2
+  L1 / L2 penalties; S5 bias/variance, validation curves; S6 class weights; S7
+  Brier score.
+- **Use in:** R tuning (LightGBM, the candidate final model). S tuning slide.
+
+### F39 · LightGBM tuning v2: same ranking as v1, smaller gap, the best probabilities of the project
+- **Finding:** a search space built from the validation curves (F38) gives the
+  same ranking as tuning v1, with a smaller train-validation gap and better
+  probabilities, consistently across the folds. Removing the class weight is
+  what improves the Brier score. Every trial lands on the plateau: once the
+  space is right, the search method matters little, and the ceiling is the
+  information in the 6 inputs (as for the random forest, F36).
+- **Evidence:** `python3 -m tuning.tune --version v2 --model lgbm` (Optuna TPE,
+  seed 42, 25 trials, objective = mean 5-fold PR-AUC; fixed: scale_pos_weight
+  1; searched: learning rate 0.01-0.1 (log), 100-1,000 trees, leaves 8-63,
+  depth 3-12, leaf size 10-200 (log), subsample 0.7-1.0, colsample 0.3-1.0,
+  reg_alpha 0.01-30 (log), reg_lambda 0.01-100 (log)). Best: 950 trees,
+  learning rate 0.014, 12 leaves, depth 10, leaf size 46, subsample 0.80,
+  colsample 0.43, reg_alpha 1.56, reg_lambda 0.74
+  (`tuning/results/v2/best_params.json`, LightGBM entry; the random forest
+  entry is unchanged). Then `python3 -m tuning.lightgbm baseline`: train 0.734,
+  validation 0.7189 ± 0.013, gap 0.015, ROC-AUC 0.8928, Brier 0.1096 (v1:
+  0.740 / 0.7190 ± 0.012 / 0.022 / 0.8928 / 0.1112; defaults: 0.757 / 0.7155 /
+  0.042 / 0.8917 / 0.1101). Per fold, same folds: PR-AUC v1 ahead in 4 of 5
+  folds by 0.0004-0.0011, v2 ahead in one by 0.0031; Brier v2 better in 5 of 5
+  folds by 0.0014-0.0020. 24 of 25 trials between 0.7157 and 0.7189 (one at
+  0.7102); best of the first 10 (random) trials 0.7180, best overall 0.7189.
+- **Reading:** small trees with many slow steps. Rate x trees = 13, above the
+  5-8 of the single curves (F38), because 12-leaf trees each do less than the
+  default 31-leaf trees: the settings interact (S5). `max_depth` 10 does not
+  bind with 12 leaves.
+- **Caveat:** the best trial is selected on the same folds, so slightly
+  optimistic (S5); the test set gives the honest number. `src/evaluate.py` and
+  `src/fairness.py` still read v1 (`BEST_PARAMS_VERSION` in `src/config.py`)
+  until v2 exists for all three models; calibration (F22-F24) and the fairness
+  audit (F25-F27) must be re-run on v2 then.
+- **Course link:** S4 gradient boosting; S5 validation curves, TPE search,
+  CV optimism; S6-S7 class weights cost calibration.
+- **Use in:** R tuning (LightGBM, the candidate final model). S tuning slide.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,

@@ -8,5 +8,17 @@
     "min_samples_split": 10,
     "max_samples": 0.3903889713135253,
     "max_features": "sqrt"
+  },
+  "LightGBM": {
+    "scale_pos_weight": 1.0,
+    "learning_rate": 0.013878841899198248,
+    "n_estimators": 950,
+    "num_leaves": 12,
+    "max_depth": 10,
+    "min_child_samples": 46,
+    "subsample": 0.797687788518375,
+    "colsample_bytree": 0.42878328256161574,
+    "reg_alpha": 1.5567434572002916,
+    "reg_lambda": 0.7385607696113071
   }
 }
