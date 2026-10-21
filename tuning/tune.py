@@ -41,10 +41,13 @@ def suggest_params(trial, name):
     hyperparameter too, so it is validated like any other (S6).
     v1 spaces (Soumaya, git tag `baseline-v1`); edit them for v2."""
     if name == "Logistic Regression":
+        # v2 (Soumaya): ranges read from the validation curves (tuning/results/logistic_regression/)
         return {
-            "C": trial.suggest_float("C", 1e-3, 1e2, log=True),
-            "penalty": trial.suggest_categorical("penalty", ["l1", "l2"]),
-            "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
+            # fixed: a list with one value means "always this value"
+            "penalty": trial.suggest_categorical("penalty", ["l2"]),
+            "class_weight": trial.suggest_categorical("class_weight", [None]),
+            # searched: the plateau of the C curves, plus one decade of margin
+            "C": trial.suggest_float("C", 1e-2, 1e2, log=True),
         }
     if name == "Random Forest":
         # v2 (Manel): ranges read from the validation curves (tuning/results/random_forest/)

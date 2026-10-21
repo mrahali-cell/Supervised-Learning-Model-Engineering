@@ -1,5 +1,6 @@
 [
   {
+    "version":"v1",
     "rule":"single threshold (best F1)",
     "accuracy":0.8174318508,
     "balanced_accuracy":0.805593616,
@@ -14,6 +15,7 @@
     "equalized_odds_gap":0.191109837
   },
   {
+    "version":"v1",
     "rule":"single threshold (best balanced accuracy)",
     "accuracy":0.7866109859,
     "balanced_accuracy":0.8114356793,
@@ -28,6 +30,7 @@
     "equalized_odds_gap":0.2283845691
   },
   {
+    "version":"v1",
     "rule":"equalized odds (ThresholdOptimizer)",
     "accuracy":0.7595306415,
     "balanced_accuracy":0.7821213563,
@@ -42,6 +45,7 @@
     "equalized_odds_gap":0.0055142276
   },
   {
+    "version":"v1",
     "rule":"equal opportunity (ThresholdOptimizer)",
     "accuracy":0.7868928059,
     "balanced_accuracy":0.8039218922,
@@ -56,6 +60,7 @@
     "equalized_odds_gap":0.1160329247
   },
   {
+    "version":"v1",
     "rule":"demographic parity (ThresholdOptimizer)",
     "accuracy":0.7646034023,
     "balanced_accuracy":0.7698014074,
@@ -68,5 +73,80 @@
     "ppv_diff":-0.3434766014,
     "four_fifths_ratio":1.0015453198,
     "equalized_odds_gap":0.1794119442
+  },
+  {
+    "version":"v2",
+    "rule":"single threshold (best F1)",
+    "accuracy":0.8240674319,
+    "balanced_accuracy":0.7998370388,
+    "f1":0.6721726262,
+    "precision":0.6067919324,
+    "recall":0.7533440342,
+    "dp_diff":-0.2838923443,
+    "tpr_diff":-0.1938344292,
+    "fpr_diff":-0.1722685096,
+    "ppv_diff":-0.0073856362,
+    "four_fifths_ratio":0.2742904687,
+    "equalized_odds_gap":0.1938344292
+  },
+  {
+    "version":"v2",
+    "rule":"single threshold (best balanced accuracy)",
+    "accuracy":0.781435745,
+    "balanced_accuracy":0.8116630705,
+    "f1":0.655799879,
+    "precision":0.5263601036,
+    "recall":0.8696629213,
+    "dp_diff":-0.3334302688,
+    "tpr_diff":-0.1416049157,
+    "fpr_diff":-0.2362812077,
+    "ppv_diff":-0.0596540276,
+    "four_fifths_ratio":0.3409376726,
+    "equalized_odds_gap":0.2362812077
+  },
+  {
+    "version":"v2",
+    "rule":"equalized odds (ThresholdOptimizer)",
+    "accuracy":0.7584033613,
+    "balanced_accuracy":0.7825534803,
+    "f1":0.6216194527,
+    "precision":0.4972716184,
+    "recall":0.8288924559,
+    "dp_diff":-0.1103814008,
+    "tpr_diff":0.0031475075,
+    "fpr_diff":-0.0012188803,
+    "ppv_diff":-0.2979242393,
+    "four_fifths_ratio":0.746605988,
+    "equalized_odds_gap":0.0031475075
+  },
+  {
+    "version":"v2",
+    "rule":"equal opportunity (ThresholdOptimizer)",
+    "accuracy":0.7886862062,
+    "balanced_accuracy":0.8034510623,
+    "f1":0.6533579894,
+    "precision":0.5379611046,
+    "recall":0.8317817014,
+    "dp_diff":-0.2122875797,
+    "tpr_diff":-0.002757783,
+    "fpr_diff":-0.1152433215,
+    "ppv_diff":-0.1762076226,
+    "four_fifths_ratio":0.5180064211,
+    "equalized_odds_gap":0.1152433215
+  },
+  {
+    "version":"v2",
+    "rule":"demographic parity (ThresholdOptimizer)",
+    "accuracy":0.7586339414,
+    "balanced_accuracy":0.7716330898,
+    "f1":0.6124480645,
+    "precision":0.497460572,
+    "recall":0.7965757089,
+    "dp_diff":-0.0002418659,
+    "tpr_diff":0.1671227729,
+    "fpr_diff":0.1007547896,
+    "ppv_diff":-0.3430658896,
+    "four_fifths_ratio":0.9993692503,
+    "equalized_odds_gap":0.1671227729
   }
 ]

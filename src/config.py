@@ -11,8 +11,8 @@ TUNING_RESULTS_DIR = ROOT / "tuning" / "results"  # every tuning result, one fol
 
 # Hyperparameters used by src/evaluate.py and src/fairness.py.
 # v1 = Soumaya's first Optuna run (git tag `baseline-v1`).
-# Switch to "v2" once tuning v2 is finished and agreed by the team.
-BEST_PARAMS_VERSION = "v1"
+# v2 = search spaces built from the validation curves, all three models (2026-10-21).
+BEST_PARAMS_VERSION = "v2"
 BEST_PARAMS = TUNING_RESULTS_DIR / BEST_PARAMS_VERSION / "best_params.json"
 
 # MLflow: runs go to a SQLite file (git-ignored); artifacts to ./mlruns (git-ignored)

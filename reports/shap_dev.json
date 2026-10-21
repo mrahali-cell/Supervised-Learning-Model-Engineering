@@ -1,0 +1,294 @@
+{
+  "model": "LightGBM",
+  "version": "v2",
+  "units": "log-odds (LightGBM raw score)",
+  "n_people": 39032,
+  "base_value_mean": -2.198382629377556,
+  "score_gap_by_sex": {
+    "mean_score_women": -3.3043022738464325,
+    "mean_score_men": -1.6498896011081765,
+    "base_value_gap": 1.1967254228473223e-05,
+    "score_gap": -1.654412672738256,
+    "sum_of_input_gaps": -1.6544246399924842
+  },
+  "by_input": [
+    {
+      "input": "marital-status",
+      "mean_abs": 1.196014472602883,
+      "mean_abs_women": 1.153495590404411,
+      "mean_abs_men": 1.2170451599993093,
+      "mean_women": -0.7214552058671744,
+      "mean_men": 0.3674296837313082,
+      "gap_women_minus_men": -1.0888848895984826
+    },
+    {
+      "input": "age",
+      "mean_abs": 0.7375337875266252,
+      "mean_abs_women": 0.8347768796994502,
+      "mean_abs_men": 0.6894354141168462,
+      "mean_women": -0.15007460820850907,
+      "mean_men": 0.07526688401052825,
+      "gap_women_minus_men": -0.22534149221903732
+    },
+    {
+      "input": "education-num",
+      "mean_abs": 0.5152607324545272,
+      "mean_abs_women": 0.46213201843646384,
+      "mean_abs_men": 0.5415392543374039,
+      "mean_women": -0.016946437014321844,
+      "mean_men": 0.00684659385289616,
+      "gap_women_minus_men": -0.023793030867218005
+    },
+    {
+      "input": "hours-per-week",
+      "mean_abs": 0.3534379109847773,
+      "mean_abs_women": 0.3879897524446846,
+      "mean_abs_men": 0.33634788088186235,
+      "mean_women": -0.16216603221803783,
+      "mean_men": 0.0771536092568888,
+      "gap_women_minus_men": -0.23931964147492663
+    },
+    {
+      "input": "occupation",
+      "mean_abs": 0.33876888358017787,
+      "mean_abs_women": 0.3564646842161912,
+      "mean_abs_men": 0.3300161875504867,
+      "mean_women": -0.04436416226108694,
+      "mean_men": 0.012235207327495053,
+      "gap_women_minus_men": -0.056599369588582
+    },
+    {
+      "input": "workclass",
+      "mean_abs": 0.08046586973314412,
+      "mean_abs_women": 0.06577358622884162,
+      "mean_abs_men": 0.087732966268663,
+      "mean_women": -0.01092120578753499,
+      "mean_men": 0.009565010456702577,
+      "gap_women_minus_men": -0.02048621624423757
+    }
+  ],
+  "by_column": [
+    {
+      "column": "marital-status_Married-civ-spouse",
+      "input": "marital-status",
+      "mean_abs": 0.7069575062737209,
+      "mean": 0.0009981225558305194
+    },
+    {
+      "column": "age",
+      "input": "age",
+      "mean_abs": 0.48079888272186627,
+      "mean": -0.0003545360587745029
+    },
+    {
+      "column": "education-num",
+      "input": "education-num",
+      "mean_abs": 0.4116482762697163,
+      "mean": 0.002169771385837128
+    },
+    {
+      "column": "is_married",
+      "input": "marital-status",
+      "mean_abs": 0.35553272421297216,
+      "mean": -0.0010681231890141572
+    },
+    {
+      "column": "age_squared",
+      "input": "age",
+      "mean_abs": 0.25711240284421283,
+      "mean": 0.0010483504086831461
+    },
+    {
+      "column": "hours-per-week",
+      "input": "hours-per-week",
+      "mean_abs": 0.21459097961291945,
+      "mean": -0.001643777717394709
+    },
+    {
+      "column": "occupation_Exec-managerial",
+      "input": "occupation",
+      "mean_abs": 0.13582344446364292,
+      "mean": -0.005585628366759492
+    },
+    {
+      "column": "marital-status_Never-married",
+      "input": "marital-status",
+      "mean_abs": 0.13188111484518783,
+      "mean": 0.004027603562446434
+    },
+    {
+      "column": "has_degree",
+      "input": "education-num",
+      "mean_abs": 0.1315094556968261,
+      "mean": -0.0031970907249847607
+    },
+    {
+      "column": "occupation_Other-service",
+      "input": "occupation",
+      "mean_abs": 0.11337437694631909,
+      "mean": -0.0031164283640291385
+    },
+    {
+      "column": "overtime",
+      "input": "hours-per-week",
+      "mean_abs": 0.11322382903856104,
+      "mean": 0.0019559258738180408
+    },
+    {
+      "column": "occupation_Prof-specialty",
+      "input": "occupation",
+      "mean_abs": 0.10596908606932914,
+      "mean": -0.0018332110837828643
+    },
+    {
+      "column": "part_time",
+      "input": "hours-per-week",
+      "mean_abs": 0.07952806962046967,
+      "mean": -0.0023574477161882614
+    },
+    {
+      "column": "marital-status_Divorced",
+      "input": "marital-status",
+      "mean_abs": 0.055618540508250124,
+      "mean": 0.00250322963717795
+    },
+    {
+      "column": "occupation_Machine-op-inspct",
+      "input": "occupation",
+      "mean_abs": 0.04351799607229386,
+      "mean": 0.0010303208917798365
+    },
+    {
+      "column": "occupation_Handlers-cleaners",
+      "input": "occupation",
+      "mean_abs": 0.034872630121188665,
+      "mean": -9.668031401664885e-05
+    },
+    {
+      "column": "occupation_Farming-fishing",
+      "input": "occupation",
+      "mean_abs": 0.02936943317857835,
+      "mean": 0.0011427191604531724
+    },
+    {
+      "column": "workclass_Self-emp-inc",
+      "input": "workclass",
+      "mean_abs": 0.0282672452776593,
+      "mean": -0.0013215901558769924
+    },
+    {
+      "column": "workclass_Self-emp-not-inc",
+      "input": "workclass",
+      "mean_abs": 0.02593603785277048,
+      "mean": 0.003964622918145684
+    },
+    {
+      "column": "occupation_Adm-clerical",
+      "input": "occupation",
+      "mean_abs": 0.02566502829711511,
+      "mean": 0.002095744111070741
+    },
+    {
+      "column": "occupation_Sales",
+      "input": "occupation",
+      "mean_abs": 0.025400422308958486,
+      "mean": -0.0011332229557111577
+    },
+    {
+      "column": "occupation_Tech-support",
+      "input": "occupation",
+      "mean_abs": 0.023625699544921948,
+      "mean": -0.0007398931593161139
+    },
+    {
+      "column": "workclass_Federal-gov",
+      "input": "workclass",
+      "mean_abs": 0.019088253102709486,
+      "mean": -0.0006891169059749103
+    },
+    {
+      "column": "workclass_Private",
+      "input": "workclass",
+      "mean_abs": 0.017758808467907287,
+      "mean": 0.00048659572813740913
+    },
+    {
+      "column": "workclass_Unknown",
+      "input": "workclass",
+      "mean_abs": 0.014662623820245965,
+      "mean": -9.417691502100469e-06
+    },
+    {
+      "column": "workclass_State-gov",
+      "input": "workclass",
+      "mean_abs": 0.014358162842274445,
+      "mean": 0.00028282597506467766
+    },
+    {
+      "column": "marital-status_Separated",
+      "input": "marital-status",
+      "mean_abs": 0.013559173268762397,
+      "mean": 0.0004233546172080653
+    },
+    {
+      "column": "workclass_Local-gov",
+      "input": "workclass",
+      "mean_abs": 0.012454104522751232,
+      "mean": 7.15134410653538e-05
+    },
+    {
+      "column": "occupation_Protective-serv",
+      "input": "occupation",
+      "mean_abs": 0.012079317920066106,
+      "mean": 0.00026620995038131444
+    },
+    {
+      "column": "occupation_Unknown",
+      "input": "occupation",
+      "mean_abs": 0.01109824996897187,
+      "mean": 0.00018317924080040655
+    },
+    {
+      "column": "occupation_Craft-repair",
+      "input": "occupation",
+      "mean_abs": 0.010797098378221778,
+      "mean": 0.0008059991607830939
+    },
+    {
+      "column": "occupation_Transport-moving",
+      "input": "occupation",
+      "mean_abs": 0.0076169876026408265,
+      "mean": 0.0004064405070346757
+    },
+    {
+      "column": "marital-status_Widowed",
+      "input": "marital-status",
+      "mean_abs": 0.0016093002399465242,
+      "mean": 0.00023481034535840313
+    },
+    {
+      "column": "occupation_Priv-house-serv",
+      "input": "occupation",
+      "mean_abs": 0.0011135263891428205,
+      "mean": 7.902581218817098e-05
+    },
+    {
+      "column": "marital-status_Married-spouse-absent",
+      "input": "marital-status",
+      "mean_abs": 0.0004526462475491174,
+      "mean": -3.7902620808275694e-05
+    },
+    {
+      "column": "workclass_No-pay",
+      "input": "workclass",
+      "mean_abs": 0.0,
+      "mean": 0.0
+    },
+    {
+      "column": "occupation_Never-worked",
+      "input": "occupation",
+      "mean_abs": 0.0,
+      "mean": 0.0
+    }
+  ]
+}
