@@ -21,4 +21,4 @@ mlflow.db
 !tuning/results/**/*.csv
 
 # logs and documents
-!docs/findings_log.md
+docs/
