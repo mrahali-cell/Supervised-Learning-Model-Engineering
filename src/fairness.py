@@ -151,11 +151,11 @@ def bootstrap_gaps(y, pred, sex, n=N_BOOTSTRAP):
             for k in ["tpr_diff", "fpr_diff", "dp_diff", "four_fifths_ratio"]}
 
 
-def plot_groups(results, y, sex, path):
+def plot_groups(results, y, sex, path, title=None):
     """Selection rate, TPR, FPR and PPV for women and men under each decision rule."""
     methods = [m for m in results if m != "single threshold (best F1)"]
     fig, axes = plt.subplots(1, 4, figsize=(15, 4.2), sharey=True)
-    for ax, (key, title) in zip(axes, [("selection_rate", "Selection rate"),
+    for ax, (key, panel_title) in zip(axes, [("selection_rate", "Selection rate"),
                                        ("tpr", "True positive rate (recall)"),
                                        ("fpr", "False positive rate"),
                                        ("ppv", "Precision (PPV)")]):
@@ -164,11 +164,11 @@ def plot_groups(results, y, sex, path):
             values = [group_frame(y, results[m], sex).loc[group, key] for m in methods]
             ax.bar(x + offset, values, width=0.4, color=COLORS[group], label=group)
         ax.set_xticks(x, [SHORT_NAMES[m] for m in methods], fontsize=8)
-        ax.set_title(title, fontsize=10)
+        ax.set_title(panel_title, fontsize=10)
         ax.grid(axis="y", alpha=0.25)
     axes[0].set_ylabel("Rate")
     axes[0].legend(fontsize=8)
-    fig.suptitle(f"Women vs men under each decision rule, {CANDIDATE} {BEST_PARAMS_VERSION} "
+    fig.suptitle(title or f"Women vs men under each decision rule, {CANDIDATE} {BEST_PARAMS_VERSION} "
                  "+ Platt (out-of-fold, development set)")
     fig.tight_layout()
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)

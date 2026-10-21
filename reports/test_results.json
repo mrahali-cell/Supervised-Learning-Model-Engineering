@@ -1,0 +1,605 @@
+{
+  "label": "test set",
+  "version": "v2",
+  "candidate": "LightGBM",
+  "n_development": 39032,
+  "n_test": 9758,
+  "base_rate_test": 0.23939331830293092,
+  "base_rate_test_by_sex": {
+    "Female": 0.10923596195151887,
+    "Male": 0.304662255731651
+  },
+  "models": [
+    {
+      "model": "Dummy (prior)",
+      "split": "development (out-of-fold)",
+      "brier": 0.18209751041394995,
+      "ece": 2.946598520736643e-10,
+      "roc_auc": 0.49997978913329066,
+      "pr_auc": 0.2394115781757129,
+      "mean_predicted": 0.23941893860168992,
+      "observed_rate": 0.23941893830703012,
+      "top_bin_predicted": 0.23941893860168997,
+      "top_bin_observed": 0.23941893830703012
+    },
+    {
+      "model": "Dummy (prior)",
+      "split": "test",
+      "brier": 0.18208415811122716,
+      "ece": 2.562000409919718e-05,
+      "roc_auc": 0.5,
+      "pr_auc": 0.23939331830293092,
+      "mean_predicted": 0.23941893830703012,
+      "observed_rate": 0.23939331830293092,
+      "top_bin_predicted": 0.23941893830703012,
+      "top_bin_observed": 0.23939331830293092
+    },
+    {
+      "model": "Logistic Regression",
+      "split": "development (out-of-fold)",
+      "brier": 0.11133407923733374,
+      "ece": 0.005912162390130952,
+      "roc_auc": 0.888719193184508,
+      "pr_auc": 0.7079681232981471,
+      "mean_predicted": 0.2394057700359972,
+      "observed_rate": 0.23941893830703012,
+      "top_bin_predicted": 0.8174891204577028,
+      "top_bin_observed": 0.8037909836065574
+    },
+    {
+      "model": "Logistic Regression",
+      "split": "test",
+      "brier": 0.11152985210621737,
+      "ece": 0.009972692359030201,
+      "roc_auc": 0.8894656828274328,
+      "pr_auc": 0.7040684561542386,
+      "mean_predicted": 0.24057871491376226,
+      "observed_rate": 0.23939331830293092,
+      "top_bin_predicted": 0.8250023132713625,
+      "top_bin_observed": 0.798155737704918
+    },
+    {
+      "model": "Random Forest",
+      "split": "development (out-of-fold)",
+      "brier": 0.11038384027673305,
+      "ece": 0.010863925964248925,
+      "roc_auc": 0.8913504050815317,
+      "pr_auc": 0.7142444427216071,
+      "mean_predicted": 0.2396650856140196,
+      "observed_rate": 0.23941893830703012,
+      "top_bin_predicted": 0.789477751232397,
+      "top_bin_observed": 0.8099385245901639
+    },
+    {
+      "model": "Random Forest",
+      "split": "test",
+      "brier": 0.10997673414268067,
+      "ece": 0.007211773781492957,
+      "roc_auc": 0.8926370497465882,
+      "pr_auc": 0.7140355585975036,
+      "mean_predicted": 0.24040779652641175,
+      "observed_rate": 0.23939331830293092,
+      "top_bin_predicted": 0.7989940485439898,
+      "top_bin_observed": 0.7991803278688525
+    },
+    {
+      "model": "LightGBM",
+      "split": "development (out-of-fold)",
+      "brier": 0.10955247174239387,
+      "ece": 0.005792890153030827,
+      "roc_auc": 0.8927457677167286,
+      "pr_auc": 0.7183297778937299,
+      "mean_predicted": 0.2394816894132431,
+      "observed_rate": 0.23941893830703012,
+      "top_bin_predicted": 0.8068604722762697,
+      "top_bin_observed": 0.8122438524590164
+    },
+    {
+      "model": "LightGBM",
+      "split": "test",
+      "brier": 0.10923514906337656,
+      "ece": 0.00910772071746381,
+      "roc_auc": 0.8944588791929216,
+      "pr_auc": 0.7147886568603854,
+      "mean_predicted": 0.24014978229488668,
+      "observed_rate": 0.23939331830293092,
+      "top_bin_predicted": 0.8140353250973243,
+      "top_bin_observed": 0.8032786885245902
+    }
+  ],
+  "test_ci95": {
+    "Logistic Regression": {
+      "pr_auc": [
+        0.6844438896542923,
+        0.7237460040004321
+      ],
+      "roc_auc": [
+        0.8829975712445032,
+        0.8962290359849349
+      ],
+      "brier": [
+        0.10766631631504435,
+        0.11521651642266076
+      ]
+    },
+    "Random Forest": {
+      "pr_auc": [
+        0.695952170115535,
+        0.7327065866497368
+      ],
+      "roc_auc": [
+        0.886027876626597,
+        0.8991430652274415
+      ],
+      "brier": [
+        0.10626254251126184,
+        0.11338030364042338
+      ]
+    },
+    "LightGBM": {
+      "pr_auc": [
+        0.6955583348358689,
+        0.7324269155143497
+      ],
+      "roc_auc": [
+        0.8878484028681799,
+        0.9006457166001536
+      ],
+      "brier": [
+        0.10552289834257375,
+        0.1128418731782466
+      ]
+    }
+  },
+  "paired_differences_test": {
+    "LightGBM - Logistic Regression": {
+      "pr_auc": {
+        "estimate": 0.010720200706146765,
+        "ci95": [
+          0.0053145196418897065,
+          0.016047109561792595
+        ],
+        "share_of_resamples_above_0": 1.0
+      },
+      "brier": {
+        "estimate": -0.0022947030428408094,
+        "ci95": [
+          -0.0030102401704923407,
+          -0.0014437437747115722
+        ],
+        "share_of_resamples_above_0": 0.0
+      }
+    },
+    "LightGBM - Random Forest": {
+      "pr_auc": {
+        "estimate": 0.000753098262881835,
+        "ci95": [
+          -0.0038022941368738737,
+          0.005025504618315115
+        ],
+        "share_of_resamples_above_0": 0.615
+      },
+      "brier": {
+        "estimate": -0.0007415850793041079,
+        "ci95": [
+          -0.0013476244433552685,
+          -1.359779197789278e-05
+        ],
+        "share_of_resamples_above_0": 0.023
+      }
+    }
+  },
+  "calibration_test": [
+    {
+      "variant": "raw",
+      "group": "all",
+      "brier": 0.10923514906337656,
+      "ece": 0.00910772071746381,
+      "roc_auc": 0.8944588791929216,
+      "pr_auc": 0.7147886568603854,
+      "mean_predicted": 0.24014978229488668,
+      "observed_rate": 0.23939331830293092,
+      "top_bin_predicted": 0.8140353250973243,
+      "top_bin_observed": 0.8032786885245902
+    },
+    {
+      "variant": "raw",
+      "group": "Female",
+      "brier": 0.0622194980212963,
+      "ece": 0.012660191765819622,
+      "roc_auc": 0.9143790615674602,
+      "pr_auc": 0.5983921152871757,
+      "mean_predicted": 0.1125849019905119,
+      "observed_rate": 0.10923596195151887,
+      "top_bin_predicted": 0.5806730149343203,
+      "top_bin_observed": 0.5920245398773006
+    },
+    {
+      "variant": "raw",
+      "group": "Male",
+      "brier": 0.13281170033990208,
+      "ece": 0.011818164374523736,
+      "roc_auc": 0.8712211738987575,
+      "pr_auc": 0.7329136067695821,
+      "mean_predicted": 0.30411869211362147,
+      "observed_rate": 0.304662255731651,
+      "top_bin_predicted": 0.841077051831396,
+      "top_bin_observed": 0.8415384615384616
+    },
+    {
+      "variant": "platt",
+      "group": "all",
+      "brier": 0.10923702740196527,
+      "ece": 0.009154286422766028,
+      "roc_auc": 0.8944588791929216,
+      "pr_auc": 0.7147886568603854,
+      "mean_predicted": 0.24008919275917553,
+      "observed_rate": 0.23939331830293092,
+      "top_bin_predicted": 0.8142450953790976,
+      "top_bin_observed": 0.8032786885245902
+    },
+    {
+      "variant": "platt",
+      "group": "Female",
+      "brier": 0.062217988601016794,
+      "ece": 0.012625946222578531,
+      "roc_auc": 0.9143790615674602,
+      "pr_auc": 0.5983921152871757,
+      "mean_predicted": 0.11249829349591402,
+      "observed_rate": 0.10923596195151887,
+      "top_bin_predicted": 0.5807301199762003,
+      "top_bin_observed": 0.5920245398773006
+    },
+    {
+      "variant": "platt",
+      "group": "Male",
+      "brier": 0.13281527751002667,
+      "ece": 0.011882555477774113,
+      "roc_auc": 0.8712211738987575,
+      "pr_auc": 0.7329136067695821,
+      "mean_predicted": 0.3040711500909141,
+      "observed_rate": 0.304662255731651,
+      "top_bin_predicted": 0.8412895203965052,
+      "top_bin_observed": 0.8415384615384616
+    }
+  ],
+  "fairness_test": {
+    "thresholds_from_development": {
+      "best_f1": 0.3429241731772772,
+      "best_balanced_accuracy": 0.20758445153737656
+    },
+    "rules": [
+      {
+        "rule": "single threshold (best F1)",
+        "accuracy": 0.8227095716335314,
+        "balanced_accuracy": 0.7985304587804491,
+        "f1": 0.6700991609458429,
+        "precision": 0.6041953232462174,
+        "recall": 0.7521404109589042,
+        "dp_diff": -0.28159698466131716,
+        "tpr_diff": -0.2146237657473612,
+        "fpr_diff": -0.16587818402447752,
+        "ppv_diff": -0.04600122100122106,
+        "four_fifths_ratio": 0.2817508621217033,
+        "equalized_odds_gap": 0.2146237657473612
+      },
+      {
+        "rule": "single threshold (best balanced accuracy)",
+        "accuracy": 0.7839721254355401,
+        "balanced_accuracy": 0.8139876173390476,
+        "f1": 0.6588996763754046,
+        "precision": 0.5296566077003122,
+        "recall": 0.8715753424657534,
+        "dp_diff": -0.32334098559124047,
+        "tpr_diff": -0.140120304165248,
+        "fpr_diff": -0.22244014764621106,
+        "ppv_diff": -0.08151767410207306,
+        "four_fifths_ratio": 0.35579611730304367,
+        "equalized_odds_gap": 0.22244014764621106
+      },
+      {
+        "rule": "equalized odds (ThresholdOptimizer)",
+        "accuracy": 0.7657306825169092,
+        "balanced_accuracy": 0.7851287522655711,
+        "f1": 0.6269582245430809,
+        "precision": 0.5065928270042194,
+        "recall": 0.822345890410959,
+        "dp_diff": -0.10847987990316066,
+        "tpr_diff": 0.004125524912041767,
+        "fpr_diff": 0.0029348278562355556,
+        "ppv_diff": -0.3041192078524804,
+        "four_fifths_ratio": 0.7446538429950593,
+        "equalized_odds_gap": 0.004125524912041767
+      },
+      {
+        "rule": "equal opportunity (ThresholdOptimizer)",
+        "accuracy": 0.7894035663045706,
+        "balanced_accuracy": 0.8087576549539872,
+        "f1": 0.6578991176960213,
+        "precision": 0.5382729501498229,
+        "recall": 0.8458904109589042,
+        "dp_diff": -0.2110289963178417,
+        "tpr_diff": 0.0028600612870275377,
+        "fpr_diff": -0.1114392273538366,
+        "ppv_diff": -0.18341568348834542,
+        "four_fifths_ratio": 0.5275654677679459,
+        "equalized_odds_gap": 0.1114392273538366
+      },
+      {
+        "rule": "demographic parity (ThresholdOptimizer)",
+        "accuracy": 0.7572248411559745,
+        "balanced_accuracy": 0.7745503579694577,
+        "f1": 0.6143578056324271,
+        "precision": 0.49566587864460204,
+        "recall": 0.807791095890411,
+        "dp_diff": -0.006666921306513918,
+        "tpr_diff": 0.13728861650209967,
+        "fpr_diff": 0.10015171522511793,
+        "ppv_diff": -0.34924610416959145,
+        "four_fifths_ratio": 0.9830085013446925,
+        "equalized_odds_gap": 0.13728861650209967
+      }
+    ],
+    "by_sex": {
+      "single threshold (best F1)": [
+        {
+          "group": "Female",
+          "n": 3259.0,
+          "selection_rate": 0.1104633323105247,
+          "tpr": 0.5702247191011236,
+          "fpr": 0.054081984154323116,
+          "ppv": 0.5638888888888889,
+          "base_rate": 0.10923596195151887
+        },
+        {
+          "group": "Male",
+          "n": 6499.0,
+          "selection_rate": 0.39206031697184185,
+          "tpr": 0.7848484848484848,
+          "fpr": 0.21996016817880062,
+          "ppv": 0.6098901098901099,
+          "base_rate": 0.304662255731651
+        }
+      ],
+      "single threshold (best balanced accuracy)": [
+        {
+          "group": "Female",
+          "n": 3259.0,
+          "selection_rate": 0.17858238723534828,
+          "tpr": 0.7528089887640449,
+          "fpr": 0.10816396830864623,
+          "ppv": 0.46048109965635736,
+          "base_rate": 0.10923596195151887
+        },
+        {
+          "group": "Male",
+          "n": 6499.0,
+          "selection_rate": 0.5019233728265887,
+          "tpr": 0.8929292929292929,
+          "fpr": 0.3306041159548573,
+          "ppv": 0.5419987737584304,
+          "base_rate": 0.304662255731651
+        }
+      ],
+      "equalized odds (ThresholdOptimizer)": [
+        {
+          "group": "Female",
+          "n": 3259.0,
+          "selection_rate": 0.3163547100337527,
+          "tpr": 0.8258426966292135,
+          "fpr": 0.25387530141233206,
+          "ppv": 0.2851600387972842,
+          "base_rate": 0.10923596195151887
+        },
+        {
+          "group": "Male",
+          "n": 6499.0,
+          "selection_rate": 0.42483458993691336,
+          "tpr": 0.8217171717171717,
+          "fpr": 0.2509404735560965,
+          "ppv": 0.5892792466497646,
+          "base_rate": 0.304662255731651
+        }
+      ],
+      "equal opportunity (ThresholdOptimizer)": [
+        {
+          "group": "Female",
+          "n": 3259.0,
+          "selection_rate": 0.23565510892911937,
+          "tpr": 0.848314606741573,
+          "fpr": 0.16052359627971063,
+          "ppv": 0.3932291666666667,
+          "base_rate": 0.10923596195151887
+        },
+        {
+          "group": "Male",
+          "n": 6499.0,
+          "selection_rate": 0.44668410524696106,
+          "tpr": 0.8454545454545455,
+          "fpr": 0.27196282363354723,
+          "ppv": 0.5766448501550121,
+          "base_rate": 0.304662255731651
+        }
+      ],
+      "demographic parity (ThresholdOptimizer)": [
+        {
+          "group": "Female",
+          "n": 3259.0,
+          "selection_rate": 0.3857011353175821,
+          "tpr": 0.9241573033707865,
+          "fpr": 0.3196693076128143,
+          "ppv": 0.2617342879872713,
+          "base_rate": 0.10923596195151887
+        },
+        {
+          "group": "Male",
+          "n": 6499.0,
+          "selection_rate": 0.392368056624096,
+          "tpr": 0.7868686868686868,
+          "fpr": 0.2195175923876964,
+          "ppv": 0.6109803921568627,
+          "base_rate": 0.304662255731651
+        }
+      ]
+    },
+    "by_race_best_f1": [
+      {
+        "group": "Amer-Indian-Eskimo",
+        "n": 87.0,
+        "selection_rate": 0.22988505747126436,
+        "tpr": 0.5384615384615384,
+        "fpr": 0.17567567567567569,
+        "ppv": 0.35,
+        "base_rate": 0.14942528735632185,
+        "small_group": true
+      },
+      {
+        "group": "Asian-Pac-Islander",
+        "n": 311.0,
+        "selection_rate": 0.35691318327974275,
+        "tpr": 0.7717391304347826,
+        "fpr": 0.182648401826484,
+        "ppv": 0.6396396396396397,
+        "base_rate": 0.2958199356913183,
+        "small_group": true
+      },
+      {
+        "group": "Black",
+        "n": 899.0,
+        "selection_rate": 0.13236929922135707,
+        "tpr": 0.7216494845360825,
+        "fpr": 0.06109725685785536,
+        "ppv": 0.5882352941176471,
+        "base_rate": 0.10789766407119021,
+        "small_group": false
+      },
+      {
+        "group": "Other",
+        "n": 80.0,
+        "selection_rate": 0.1625,
+        "tpr": 0.8,
+        "fpr": 0.07142857142857142,
+        "ppv": 0.6153846153846154,
+        "base_rate": 0.125,
+        "small_group": true
+      },
+      {
+        "group": "White",
+        "n": 8381.0,
+        "selection_rate": 0.3155947977568309,
+        "tpr": 0.7537664783427496,
+        "fpr": 0.16685312450055936,
+        "ppv": 0.6052930056710775,
+        "base_rate": 0.2534303782364873,
+        "small_group": false
+      }
+    ],
+    "bootstrap_95": {
+      "single threshold (best F1)": {
+        "tpr_diff": [
+          -0.27209041023872643,
+          -0.16389811269742102
+        ],
+        "fpr_diff": [
+          -0.18024297868197042,
+          -0.15076213885719958
+        ],
+        "dp_diff": [
+          -0.2978503909831059,
+          -0.26598268938245956
+        ],
+        "four_fifths_ratio": [
+          0.2531308445622995,
+          0.3087695044401805
+        ]
+      },
+      "single threshold (best balanced accuracy)": {
+        "tpr_diff": [
+          -0.18559457091077824,
+          -0.09312073182979501
+        ],
+        "fpr_diff": [
+          -0.24076332631262692,
+          -0.20652022895038463
+        ],
+        "dp_diff": [
+          -0.3418915770062985,
+          -0.30565707489784305
+        ],
+        "four_fifths_ratio": [
+          0.3277388617353381,
+          0.38401148791717626
+        ]
+      },
+      "equalized odds (ThresholdOptimizer)": {
+        "tpr_diff": [
+          -0.041685351693730346,
+          0.04678292476129327
+        ],
+        "fpr_diff": [
+          -0.01668026289570898,
+          0.024019008480654823
+        ],
+        "dp_diff": [
+          -0.1276258468702099,
+          -0.08627233882865576
+        ],
+        "four_fifths_ratio": [
+          0.7022649464913865,
+          0.7930926699114712
+        ]
+      }
+    }
+  },
+  "shap_test": {
+    "by_input": [
+      {
+        "input": "marital-status",
+        "mean_abs": 1.19279908518197,
+        "mean_women": -0.7185189598884815,
+        "mean_men": 0.362932336109347,
+        "gap_women_minus_men": -1.0814512959978284
+      },
+      {
+        "input": "age",
+        "mean_abs": 0.7439959910988738,
+        "mean_women": -0.15437065423491286,
+        "mean_men": 0.06576905573137816,
+        "gap_women_minus_men": -0.220139709966291
+      },
+      {
+        "input": "education-num",
+        "mean_abs": 0.5183277184326499,
+        "mean_women": -0.013967629969759386,
+        "mean_men": 0.018579764028409888,
+        "gap_women_minus_men": -0.03254739399816928
+      },
+      {
+        "input": "hours-per-week",
+        "mean_abs": 0.3590834223537139,
+        "mean_women": -0.16512366935777656,
+        "mean_men": 0.08136495916277645,
+        "gap_women_minus_men": -0.246488628520553
+      },
+      {
+        "input": "occupation",
+        "mean_abs": 0.34472554769513064,
+        "mean_women": -0.04949946471628236,
+        "mean_men": 0.014315715570678858,
+        "gap_women_minus_men": -0.06381518028696122
+      },
+      {
+        "input": "workclass",
+        "mean_abs": 0.0796547335706273,
+        "mean_women": -0.01616839660121393,
+        "mean_men": 0.010395281909779074,
+        "gap_women_minus_men": -0.026563678510993005
+      }
+    ],
+    "score_gap_by_sex": {
+      "mean_score_women": -3.319359551950113,
+      "mean_score_men": -1.6483536646693173,
+      "score_gap": -1.6710058872807958
+    }
+  }
+}

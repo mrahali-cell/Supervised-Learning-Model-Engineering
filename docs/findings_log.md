@@ -4,7 +4,8 @@ Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
 (7 min + 3 min Q&A). Last updated 2026-10-21 (after the LightGBM
 diagnosis and tuning v2, and the logistic regression tuning v2: v2 now
-complete for the three models; calibration and fairness audit on v2).
+complete for the three models; calibration, fairness audit and SHAP on v2;
+final test-set evaluation, once).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -90,6 +91,11 @@ To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
   curves (learning rate x trees, leaves, depth, leaf size, sampling, L1 / L2,
   class weight); tuning v2 with a search space built from the curves (F39,
   `suggest_params()` in `tuning/tune.py`, `tuning/results/v2/best_params.json`).
+- **Final model (LightGBM v2):** calibration (F41), fairness audit v1 vs v2
+  (F42, `notebooks/06_fairness.ipynb`), SHAP explainability (F43,
+  `src/evaluate.py` stage `shap`); explained in
+  `notebooks/05_calibration_explain_test.ipynb`. Final evaluation on the test
+  set, once (F44, `src/evaluate.py` stage `test`, `notebooks/07_test.ipynb`).
 
 ---
 
@@ -721,6 +727,84 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Use in:** R fairness audit (replaces the v1 numbers of F25-F28). S fairness
   slides.
 
+### F43 · Explainability (SHAP): marital status carries two thirds of the score gap between women and men
+- **Finding:** SHAP on LightGBM v2 ranks marital status first, then age,
+  education, hours and occupation. SHAP values add up, so the mean score gap
+  between women and men (the model never sees `sex`) splits exactly into one
+  part per input: two thirds of it goes through marital status, then hours and
+  age; education, although important overall, separates people but hardly
+  women from men. For the same value of an input the effect is about the same
+  for women and men: the gap comes from the different values the two groups
+  have (proxies, F30), not from a different treatment of the same value. This
+  confirms the project hypothesis on the model itself.
+- **Evidence:** `python3 -m src.evaluate shap` (TreeSHAP, out-of-fold: each of
+  the 39,032 people explained by the fold model that never saw them; log-odds),
+  `reports/shap_dev.json`, `reports/figures/shap_importance_dev.png`,
+  `shap_beeswarm_dev.png`, `shap_by_sex_dev.png`, `shap_dependence_dev.png`;
+  explained in `notebooks/05_calibration_explain_test.ipynb`, section 2. Mean
+  |SHAP| per input: marital status 1.20, age 0.74, education 0.52, hours 0.35,
+  occupation 0.34, workclass 0.08; top column Married-civ-spouse 0.71 (its
+  copy `is_married` 0.36). Mean score: women -3.304, men -1.650, gap -1.654 =
+  marital status -1.089 (66%) + hours -0.239 (14%) + age -0.225 (14%) +
+  occupation -0.057 (3%) + education -0.024 (1%) + workclass -0.020 (1%) +
+  base value 0.00001. Mean SHAP of marital status: women -0.72, men +0.37
+  (Married-civ-spouse 15.3% of women vs 60.9% of men, F30). Development set:
+  mean age women 36.9 vs men 39.5, hours 36.4 vs 42.4.
+- **Caveat:** SHAP describes the model, not causes (S8). Duplicate columns
+  (`is_married` / Married-civ-spouse, `workclass_Unknown` /
+  `occupation_Unknown`) share their effect arbitrarily: read the inputs, not
+  these columns. Development set only.
+- **Decision:** no input is removed: marital status is the strongest
+  legitimate signal (among married people women and men earn alike, F31), and
+  the other inputs also differ by sex, so the proxy effect would partly move to
+  them. The bias is handled at the decision step (equalized odds, F42) and
+  reported.
+- **Course link:** S8 SHAP (additivity, global vs local, dependence); S9
+  proxies and fairness through unawareness.
+- **Use in:** R explainability + fairness (why the audit finds a gap). S
+  explainability slide.
+
+### F44 · Test set (once): the development results hold, LightGBM beats the logistic regression, the mitigation generalises
+- **Finding:** on the locked test set, every development result holds. The
+  final model scores what the development CV said (slightly optimistic by
+  0.0035 PR-AUC), stays calibrated overall and by sex, and is better than the
+  logistic regression on the same people, while it is tied with the random
+  forest on ranking. The bias by sex is confirmed, and the equalized-odds
+  mitigation, fixed on the development set, brings both error-rate gaps to
+  about 0 on new people, at the cost measured on development. The SHAP split of
+  the score gap is the same (marital status about two thirds).
+- **Evidence:** `python3 -m src.evaluate test` (2026-10-21; every choice
+  fixed on the development set: v2 parameters, Platt, thresholds, the
+  ThresholdOptimizer; each model refitted on the 39,032 development people,
+  9,758 test people scored); `reports/test_results.json`,
+  `reports/figures/test_pr_curves.png`, `test_calibration.png`,
+  `test_fairness_by_sex.png`; explained in `notebooks/07_test.ipynb`
+  (section 3f). LightGBM v2 test: PR-AUC 0.7148 [0.696, 0.732] (development
+  out-of-fold 0.7183), ROC-AUC 0.8945, Brier 0.1092, ECE 0.009. Logistic
+  regression 0.7041, random forest 0.7140, Dummy 0.239. Paired: LightGBM -
+  LR +0.0107 PR-AUC [+0.0053, +0.0160], Brier -0.0023 [-0.0030, -0.0014];
+  LightGBM - RF +0.0008 [-0.0038, +0.0050], Brier -0.0007 [-0.0013,
+  -0.00001]. Calibration by sex: women 0.113 predicted vs 0.109 observed, men
+  0.304 vs 0.305; Platt ECE 0.0092 vs raw 0.0091. Fairness at the best-F1
+  threshold (0.343, from development): TPR women 0.570 vs men 0.785 (gap
+  -0.215 [-0.272, -0.164]), FPR 0.054 vs 0.220, selection 0.110 vs 0.392
+  (four-fifths 0.282 [0.253, 0.309]), PPV 0.564 vs 0.610. Equalized odds: TPR
+  gap +0.004 [-0.042, +0.047], FPR gap +0.003 [-0.017, +0.024], balanced
+  accuracy 0.814 -> 0.785 (vs the balanced-accuracy threshold), four-fifths
+  0.356 -> 0.745 [0.702, 0.793], PPV gap -0.304 (0.285 vs 0.589). SHAP score
+  gap -1.671: marital status 65%, hours 15%, age 13%, occupation 4%,
+  education 2%, workclass 2%.
+- **Caveat:** one test set of 9,758 people: a single score is uncertain by
+  about +/- 0.02 PR-AUC, so models are compared with paired intervals. Women's
+  PPV rests on about 360 flagged women. Race groups other than White and Black
+  have fewer than 500 test people. The stage was run a second time
+  (`--force`) only to redraw a figure title (plotting bug); all numbers were
+  identical (differences below 1e-16).
+- **Course link:** S5 honest held-out evaluation; S6 thresholds; S7
+  calibration; S8 bootstrap, SHAP; S9 fairness before / after.
+- **Use in:** R results + fairness + conclusion; model card. S results and
+  fairness slides.
+
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
   but finds fewer of the high earners. With no single costly error in this case,
@@ -1024,6 +1108,35 @@ information in the data, not the model. The value of v2 is to explain *why*
 **Steps:** (1) `python -m tuning.random_forest curves`; (2) fix what is settled;
 (3) `python -m tuning.tune --version v2 --model rf` with the new search space;
 (4) compare v0, baseline, v1 and v2. Status: done on 2026-10-20 (F36); final random forest = tuned v2.
+
+---
+
+## 3f. Test set results (once, 2026-10-21)
+
+Run: `python3 -m src.evaluate test`. All choices fixed on the development set;
+models refitted on the 39,032 development people; 9,758 test people (women
+10.9% and men 30.5% high earners). File: `reports/test_results.json`;
+explained in `notebooks/07_test.ipynb` (F44).
+
+| Model | Dev PR-AUC (OOF) | Test PR-AUC [95%] | Test ROC-AUC | Test Brier | Test ECE |
+|---|---|---|---|---|---|
+| Dummy | 0.239 | 0.239 | 0.500 | 0.182 | 0.000 |
+| Logistic Regression v2 | 0.708 | 0.704 [0.684, 0.724] | 0.890 | 0.112 | 0.010 |
+| Random Forest v2 | 0.714 | 0.714 [0.696, 0.733] | 0.893 | 0.110 | 0.007 |
+| **LightGBM v2 (final)** | 0.718 | **0.715 [0.696, 0.732]** | **0.894** | **0.109** | 0.009 |
+
+Paired differences (same test people): LightGBM - LR PR-AUC +0.011 [+0.005,
++0.016]; LightGBM - RF +0.001 [-0.004, +0.005].
+
+Fairness of LightGBM v2 + Platt on the test set (rules fixed on development):
+
+| Decision rule | Balanced acc. | F1 | TPR gap | FPR gap | Equalized-odds gap | PPV gap | Four-fifths ratio |
+|---|---|---|---|---|---|---|---|
+| One threshold (best F1, 0.343) | 0.799 | 0.670 | -0.215 | -0.166 | 0.215 | -0.046 | 0.282 |
+| One threshold (best balanced accuracy, 0.208) | 0.814 | 0.659 | -0.140 | -0.222 | 0.222 | -0.082 | 0.356 |
+| Equalized odds (ThresholdOptimizer) | 0.785 | 0.627 | +0.004 | +0.003 | 0.004 | -0.304 | 0.745 |
+| Equal opportunity (ThresholdOptimizer) | 0.809 | 0.658 | +0.003 | -0.111 | 0.111 | -0.183 | 0.528 |
+| Demographic parity (ThresholdOptimizer) | 0.775 | 0.614 | +0.137 | +0.100 | 0.137 | -0.349 | 0.983 |
 
 ---
 

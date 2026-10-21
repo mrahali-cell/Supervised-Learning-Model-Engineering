@@ -34,9 +34,9 @@ Every finding and decision, with its numbers, is in
 | 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/random_forest.py`, `notebooks/0*_*.ipynb` | random forest, LR & LightGBM done |
 | 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for all three models (used from now on) |
 | 8 | Calibration | Session 7 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on v2 (LightGBM v2 needs no recalibration) |
-| 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py` | to do |
-| 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py`, `notebooks/06_fairness.ipynb` | done on the development set, v1 and v2 |
-| 11 | Test set, once: final metrics, fairness before / after, model card | | | to do |
+| 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on LightGBM v2 (development set) |
+| 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py`, `notebooks/06_fairness.ipynb` | done on the development set, V1 & V2 LightGBM |
+| 11 | Test set, once: final metrics, fairness before / after, model card | | `src/evaluate.py`, `notebooks/07_test.ipynb` | done (2026-10-21) |
 
 5-fold stratified cross-validation on the development set measures every
 comparison in steps 5 to 8. The test set is opened only once, in step 11.
@@ -52,7 +52,7 @@ src/                  LIBRARY: imported by everything else, never trains a model
     pipeline.py         feature engineering + preprocessing + model, as one Pipeline
     models.py           the models: defaults (baseline) and build_model(name, params)
     cv.py               cross-validation helpers: out-of-fold scores, train vs validation scores
-    evaluate.py         calibration (later: test-set metrics, SHAP)
+    evaluate.py         calibration, SHAP explanations, final test-set evaluation
     fairness.py         fairness audit and mitigation
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py         stage 1: all models with default parameters
@@ -71,6 +71,7 @@ notebooks/            EXPLANATIONS: read the results files and comment them, no 
     04_lightgbm.ipynb
     05_calibration_explain_test.ipynb  final model (LightGBM v2): calibration, then SHAP and the test set
     06_fairness.ipynb             fairness audit by sex: v1 and v2 (recalibrated LightGBM), before / after
+    07_test.ipynb                 final evaluation on the test set (once) and model card
 reports/              calibration and fairness outputs (json + figures)
 docs/findings_log.md  the log of every finding and decision (for the report and the oral)
 requirements.txt      Python libraries
@@ -139,6 +140,9 @@ instead of `.venv`, and it passes no argument (`baseline`, `curves`...).
 | `python3 -m tuning.random_forest curves --param max_depth` | One curve only | same files, that curve replaced |
 | `python3 -m tuning.tune --version v2 --model rf` | Optuna, 25 trials (`--trials N` to change); `--model` = `lr`, `rf` or `lgbm`, repeatable; no `--model` = all three | `tuning/results/v2/best_params.json` + MLflow runs |
 | `python3 -m src.evaluate calibration` | Calibration on out-of-fold predictions: Brier, ECE, Platt, isotonic, by sex | `reports/calibration_dev.json`, `reports/figures/`, `reports/calibration_lightgbm_comparison.png` |
+| `python3 -m src.evaluate shap` | SHAP (TreeSHAP, out-of-fold) on the candidate LightGBM: importance, beeswarm, by sex, dependence | `reports/shap_dev.json`, `reports/figures/shap_*_dev.png` |
+| `python3 -m src.evaluate test --dry-run --out <folder>` | Checks the final evaluation on a development hold-out, without the test set | files in `<folder>` |
+| `python3 -m src.evaluate test` | Final evaluation on the test set, **once** (refuses to run again without `--force`) | `reports/test_results.json`, `reports/figures/test_*.png` |
 | `python3 -m src.fairness audit` | Fairness audit by sex + mitigation (development set) | `reports/fairness_dev.json` (one set of rows per version), `reports/fairness_details_dev_<version>.json` and `reports/figures/fairness_by_sex_dev_<version>.png` (no suffix for v1) |
 | `mlflow ui --backend-store-uri sqlite:///mlflow.db` | Browse every Optuna trial | opens in the browser |
 
