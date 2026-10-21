@@ -1,0 +1,6 @@
+experiment,train PR-AUC,val PR-AUC,val PR-AUC std,gap PR-AUC,train ROC-AUC,val ROC-AUC,val ROC-AUC std,train Brier,val Brier,val Brier std,seconds
+Dummy (predicts the base rate),0.2394,0.2394,0.0,-0.0,0.5,0.5,0.0,0.1821,0.1821,0.0,0.7268
+"LightGBM defaults, 6 inputs only",0.7576,0.7155,0.0107,0.042,0.9114,0.8916,0.0045,0.1012,0.1101,0.0021,2.3192
+LightGBM defaults + engineered features,0.7574,0.7155,0.0109,0.0419,0.9113,0.8917,0.0045,0.1013,0.1101,0.0021,2.1966
+LightGBM tuned v1,0.7405,0.719,0.0116,0.0215,0.9033,0.8928,0.0047,0.1063,0.1112,0.0022,5.756
+LightGBM tuned v2,0.7341,0.7189,0.0126,0.0152,0.8995,0.8928,0.005,0.1064,0.1096,0.0024,10.2485

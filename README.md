@@ -31,8 +31,8 @@ Every finding and decision, with its numbers, is in
 | 3 | Stratified split: 80% development / 20% test, test locked | Session 1 | `src/data.py` | done |
 | 4 | Pipeline: preprocessing + feature engineering | Session 5 | `src/pipeline.py` | done |
 | 5 | Baseline models: Dummy, logistic regression, random forest, LightGBM | Sessions 2-4 | `tuning/baseline.py` | done |
-| 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/random_forest.py`, `notebooks/0*_*.ipynb` | random forest done |
-| 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for the random forest |
+| 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/random_forest.py`, `notebooks/0*_*.ipynb` | random forest, LR & LightGBM done |
+| 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for the random forest, LightGBM |
 | 8 | Calibration | Session 7 | `src/evaluate.py` | done on v1 |
 | 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py` | to do |
 | 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py` | done on the development set |
