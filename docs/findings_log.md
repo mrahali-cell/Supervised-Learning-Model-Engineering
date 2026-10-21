@@ -2,8 +2,10 @@
 
 Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
-(7 min + 3 min Q&A). Last updated 2026-10-20 (after the random forest
-tuning v2).
+(7 min + 3 min Q&A). Last updated 2026-10-21 (after the LightGBM
+diagnosis and tuning v2, and the logistic regression tuning v2: v2 now
+complete for the three models; calibration, fairness audit and SHAP on v2;
+final test-set evaluation, once).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -84,7 +86,16 @@ To read this file nicely in VS Code: open it, then press `Ctrl+Shift+V`
 - (to complete)
 
 ### Hadiqa
-- (to complete)
+- **LightGBM:** diagnosis before tuning (F38, `tuning/lightgbm.py`,
+  `notebooks/04_lightgbm.ipynb`): baseline train vs validation, validation
+  curves (learning rate x trees, leaves, depth, leaf size, sampling, L1 / L2,
+  class weight); tuning v2 with a search space built from the curves (F39,
+  `suggest_params()` in `tuning/tune.py`, `tuning/results/v2/best_params.json`).
+- **Final model (LightGBM v2):** calibration (F41), fairness audit v1 vs v2
+  (F42, `notebooks/06_fairness.ipynb`), SHAP explainability (F43,
+  `src/evaluate.py` stage `shap`); explained in
+  `notebooks/05_calibration_explain_test.ipynb`. Final evaluation on the test
+  set, once (F44, `src/evaluate.py` stage `test`, `notebooks/07_test.ipynb`).
 
 ---
 
@@ -280,7 +291,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** project requirement 7 (experiment tracking).
 - **Use in:** R tracking (take screenshots). S backup.
 
-### F22 · Calibration: Random Forest very over-confident, LightGBM mildly, Logistic Regression fine
+### F22 · Calibration: Random Forest very over-confident, LightGBM mildly, Logistic Regression fine (v1; updated by F41)
 - **Finding:** the tuned Random Forest says "0.91" for people of whom only 81%
   really are high earners; its curve sits far below the diagonal. LightGBM is
   slightly over-confident. Logistic Regression is already calibrated. The Random
@@ -294,7 +305,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S7 reliability diagram, Brier, ECE, over-confidence.
 - **Use in:** R calibration. S calibration slide.
 
-### F23 · Calibration: Platt and isotonic fix it without hurting the ranking much
+### F23 · Calibration: Platt and isotonic fix it without hurting the ranking much (v1; updated by F41)
 - **Finding:** recalibration brings the Random Forest and LightGBM to the level
   of Logistic Regression. Platt keeps the ranking (monotone map); isotonic gives
   the lowest ECE but its step function creates ties and costs a little PR-AUC.
@@ -310,7 +321,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   quality, not ranking".
 - **Use in:** R calibration. S calibration slide.
 
-### F24 · Calibration by sex: raw probabilities over-predict, more for women in relative terms
+### F24 · Calibration by sex: raw probabilities over-predict, more for women in relative terms (v1; updated by F41)
 - **Finding:** before recalibration the Random Forest and LightGBM predict
   higher probabilities than the observed rates for both sexes. In relative terms
   the gap is larger for women, so a raw score does not mean the same thing for
@@ -327,7 +338,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   calibration by group.
 - **Use in:** R calibration + fairness. S fairness slide.
 
-### F25 · Fairness audit (before): unequal error rates and selection, equal meaning of a flag
+### F25 · Fairness audit (before): unequal error rates and selection, equal meaning of a flag (v1; v2 in F42)
 - **Finding:** with one group-blind threshold, the model finds far fewer of the
   high-earning women than of the high-earning men (62% vs 81%), flags women much
   less often overall (11.8% vs 41.7%), and wrongly flags far fewer lower-earning
@@ -344,7 +355,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   four-fifths rule, base-rate theorem; S8 uncertainty of slice metrics.
 - **Use in:** R fairness (core). S fairness slide.
 
-### F26 · Mitigation: equalized odds closes the error-rate gaps, at a modest cost, and widens the precision gap
+### F26 · Mitigation: equalized odds closes the error-rate gaps, at a modest cost, and widens the precision gap (v1; v2 in F42)
 - **Finding:** per-group thresholds (Fairlearn `ThresholdOptimizer`,
   post-processing) bring the TPR and FPR of women and men together. The price is
   about 3 points of balanced accuracy, and a flag now means less for women than
@@ -359,7 +370,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S9 post-processing and the fairness-accuracy trade-off.
 - **Use in:** R fairness (before / after). S fairness slide.
 
-### F27 · The three definitions cannot all be satisfied (measured)
+### F27 · The three definitions cannot all be satisfied (measured) (v1; v2 in F42)
 - **Finding:** enforcing equal opportunity or demographic parity instead of
   equalized odds moves the other gaps in different directions.
 - **Evidence:** section 3d. Equal opportunity: TPR gap -0.001 but FPR gap
@@ -371,7 +382,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S9 "fairness definitions conflict when base rates differ".
 - **Use in:** R fairness (discussion). S fairness slide.
 
-### F28 · Race: gaps exist too, and small groups are unstable
+### F28 · Race: gaps exist too, and small groups are unstable (v1; v2 in F42)
 - **Finding:** at the same threshold, Black people are selected about half as
   often as White people and have a lower TPR; Asian-Pac-Islander people look
   like White people. Two groups are too small for reliable metrics.
@@ -545,13 +556,254 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   depend on the solver's shuffle (the script fixes `random_state=42`), so they
   are not a stable feature selection. Married x hours combines two proxies for
   sex (F30): re-check the fairness gap if it is adopted.
-- **Next:** proposed v2 space, not run: C 0.01-100 (log), L2 fixed,
-  class_weight None fixed (notebook 02, section 6). Needs the team's agreement
-  to edit `suggest_params()` in `tuning/tune.py`. Expected: about 0.708, as v1.
+- **Next:** done on 2026-10-21: tuning v2 with the space C 0.01-100 (log), L2
+  fixed, class_weight None fixed (F40).
 - **Course link:** S2 logistic regression, L1 / L2 / Elastic Net; S5
   bias/variance, validation curves, grid / random / TPE search; S6 class
   weights; S7 Brier score.
 - **Use in:** R tuning (logistic regression). S tuning slide.
+
+### F38 · LightGBM diagnosis: mild variance, at the ceiling; rate and trees go together, class weights only cost calibration
+- **Finding:** LightGBM's defaults overfit only a little (gap 0.04) and the
+  model sits at the same ceiling as the others: every validation curve peaks at
+  0.716-0.718. The learning rate and the number of trees must be read
+  together: the best validation is always at rate x trees of about 5 to 8, and
+  more steps overfit (unlike the forest, where more trees never hurt). The gap
+  can be halved for free (fewer leaves, a depth limit, larger leaves, strong
+  L1 / L2 penalties): only the train score drops. `scale_pos_weight` leaves the
+  ranking unchanged and damages the probabilities.
+- **Evidence:** `python3 -m tuning.lightgbm baseline | curves`, 5-fold CV,
+  results in `tuning/results/lightgbm/`, explained in
+  `notebooks/04_lightgbm.ipynb`. Train / validation PR-AUC (gap): defaults
+  0.757 / 0.7155 ± 0.011 (0.042), 6 inputs only 0.758 / 0.7155 (engineered
+  features add nothing, F15); tuned v1 0.740 / 0.7190 ± 0.012 (0.022), Brier
+  0.1112 vs 0.1101 at the defaults. Curves (one setting at a time, the others at
+  the defaults): learning rate x trees best 0.7170 (0.03, 200), 0.7165 (0.1,
+  50), 0.7163 (0.01, 800); 0.1 with 1,600 trees 0.672 (gap 0.24); 0.01 with 25
+  trees 0.686, Brier 0.156; 0.3 unstable (0.585 at 1,600 trees, fold std 0.06;
+  train score falls from 0.842 to 0.787; on fold 1, 17% of training scores
+  within 1e-6 of 0 or 1). num_leaves 4 / 16 / 255: 0.711 (gap 0.005) / 0.7169 /
+  0.694 (gap 0.18). max_depth 2: 0.709; 4: 0.7170 (gap 0.017); 8 and more = no
+  limit. min_child_samples 5-500: 0.714-0.716 (gap 0.047 -> 0.024). subsample
+  0.7-1.0: 0.716; 0.3: 0.712. colsample_bytree 0.4: 0.7181 (highest point,
+  +0.0026 vs 1.0). reg_alpha 10: 0.7168 (gap 0.021), 100: 0.703; reg_lambda
+  100: 0.7165 (gap 0.021), no effect up to 1. scale_pos_weight 1 / 1.5 / 2 /
+  3.2 / 5: PR-AUC 0.7155-0.7160, Brier 0.110 / 0.114 / 0.120 / 0.138 / 0.162.
+- **Caveat:** single curves around the defaults; the settings interact (v1's
+  0.719 beats every single curve by combining a slow rate with sampling, within
+  the noise). The rate 0.3 points vary slightly between runs (multithreading);
+  all others are reproducible.
+- **Next:** done on 2026-10-21: tuning v2 with a search space built from these
+  curves (F39).
+- **Course link:** S4 gradient boosting (learning rate, number of trees); S2
+  L1 / L2 penalties; S5 bias/variance, validation curves; S6 class weights; S7
+  Brier score.
+- **Use in:** R tuning (LightGBM, the candidate final model). S tuning slide.
+
+### F39 · LightGBM tuning v2: same ranking as v1, smaller gap, the best probabilities of the project
+- **Finding:** a search space built from the validation curves (F38) gives the
+  same ranking as tuning v1, with a smaller train-validation gap and better
+  probabilities, consistently across the folds. Removing the class weight is
+  what improves the Brier score. Every trial lands on the plateau: once the
+  space is right, the search method matters little, and the ceiling is the
+  information in the 6 inputs (as for the random forest, F36).
+- **Evidence:** `python3 -m tuning.tune --version v2 --model lgbm` (Optuna TPE,
+  seed 42, 25 trials, objective = mean 5-fold PR-AUC; fixed: scale_pos_weight
+  1; searched: learning rate 0.01-0.1 (log), 100-1,000 trees, leaves 8-63,
+  depth 3-12, leaf size 10-200 (log), subsample 0.7-1.0, colsample 0.3-1.0,
+  reg_alpha 0.01-30 (log), reg_lambda 0.01-100 (log)). Best: 950 trees,
+  learning rate 0.014, 12 leaves, depth 10, leaf size 46, subsample 0.80,
+  colsample 0.43, reg_alpha 1.56, reg_lambda 0.74
+  (`tuning/results/v2/best_params.json`, LightGBM entry; the random forest
+  entry is unchanged). Then `python3 -m tuning.lightgbm baseline`: train 0.734,
+  validation 0.7189 ± 0.013, gap 0.015, ROC-AUC 0.8928, Brier 0.1096 (v1:
+  0.740 / 0.7190 ± 0.012 / 0.022 / 0.8928 / 0.1112; defaults: 0.757 / 0.7155 /
+  0.042 / 0.8917 / 0.1101). Per fold, same folds: PR-AUC v1 ahead in 4 of 5
+  folds by 0.0004-0.0011, v2 ahead in one by 0.0031; Brier v2 better in 5 of 5
+  folds by 0.0014-0.0020. 24 of 25 trials between 0.7157 and 0.7189 (one at
+  0.7102); best of the first 10 (random) trials 0.7180, best overall 0.7189.
+- **Reading:** small trees with many slow steps. Rate x trees = 13, above the
+  5-8 of the single curves (F38), because 12-leaf trees each do less than the
+  default 31-leaf trees: the settings interact (S5). `max_depth` 10 does not
+  bind with 12 leaves.
+- **Caveat:** the best trial is selected on the same folds, so slightly
+  optimistic (S5); the test set gives the honest number. `src/evaluate.py` and
+  `src/fairness.py` still read v1 (`BEST_PARAMS_VERSION` in `src/config.py`)
+  until v2 exists for all three models; calibration (F22-F24) and the fairness
+  audit (F25-F27) must be re-run on v2 then.
+- **Course link:** S4 gradient boosting; S5 validation curves, TPE search,
+  CV optimism; S6-S7 class weights cost calibration.
+- **Use in:** R tuning (LightGBM, the candidate final model). S tuning slide.
+
+### F40 · Logistic regression tuning v2: identical to v1, as predicted; v2 now complete for the three models
+- **Finding:** the v2 space read from the curves (F37) finds a different C on
+  the same flat plateau and exactly the same scores as v1. With this run, v2
+  exists for all three models, so the project switches to v2
+  (`BEST_PARAMS_VERSION = "v2"` in `src/config.py`). Across the three
+  families, LightGBM v2 ranks best and has the best probabilities; the
+  differences are small next to the fold noise (section 3b-v2).
+- **Evidence:** `python3 -m tuning.tune --version v2 --model lr` (Optuna TPE,
+  seed 42, 25 trials; fixed: L2, no class weights; searched: C 0.01-100, log).
+  Best: C = 6.80 (v1: 5.18) (`tuning/results/v2/best_params.json`, logistic
+  regression entry; the other two entries unchanged). Then
+  `python3 -m tuning.logistic_regression baseline`: train 0.7097, validation
+  0.7083 ± 0.013, gap 0.0014, ROC-AUC 0.8887, Brier 0.1113, identical to v1 to
+  4 decimals. 18 of 25 trials at 0.7083, 21 of 25 at 0.7080 or more; lowest
+  0.7019 (a small C).
+- **Caveat:** best trial picked on the same folds (S5), negligible on a flat
+  curve. The married x hours interaction (F37) is not part of v2.
+- **Next:** calibration (F41) and fairness audit (F42) re-run on v2 on
+  2026-10-21.
+- **Course link:** S2 regularization; S5 validation curves and TPE search.
+- **Use in:** R tuning (logistic regression) and model choice. S tuning slide.
+
+### F41 · Calibration v2: LightGBM v2 is calibrated without recalibration; the class weight caused v1's over-confidence
+- **Finding:** with no class weight, LightGBM v2's raw probabilities are as
+  well calibrated as the logistic regression's, for everyone and for each sex.
+  Platt scaling now changes nothing, and isotonic only costs ranking. So the
+  over-confidence of v1 (F22) and its larger relative error for women (F24)
+  came from `scale_pos_weight`, not from boosting. The random forest confirms
+  it: without its class weights, its ECE falls from 0.132 to 0.011. All three
+  tuned v2 models are calibrated before recalibration.
+- **Evidence:** `python3 -m src.evaluate calibration` with
+  `BEST_PARAMS_VERSION = "v2"`, out-of-fold, development set
+  (`reports/calibration_dev.json`,
+  `reports/calibration_lightgbm_comparison.png` (LightGBM raw vs Platt vs
+  isotonic: the isotonic histogram is spiky, i.e. ties), section 3c; explained in `notebooks/05_calibration_explain_test.ipynb`,
+  section 1). LightGBM
+  raw: ECE 0.0058 (v1 0.030), Brier 0.1096 (v1 0.1112), top 10% predicted
+  0.807 vs observed 0.812 (v1 0.835 vs 0.813). Platt: ECE 0.0057, Brier
+  0.1096, PR-AUC 0.7183 -> 0.7180. Isotonic: ECE 0.0010, PR-AUC 0.7183 ->
+  0.7135. By sex, raw: women 0.112 predicted vs 0.109 observed, men 0.302 vs
+  0.304 (v1: 0.132 and 0.337); ECE 0.010 for both. Logistic regression raw
+  ECE 0.0059; random forest raw ECE 0.0109 (v1 0.132), Brier 0.1104.
+- **Decision (to confirm with the team):** candidate final model = **LightGBM
+  v2 with raw probabilities**, no Platt. `src/fairness.py` still applies Platt
+  to LightGBM: with v2 this gives the same probabilities, so it is harmless;
+  remove it for simplicity or keep it as a safety step.
+- **Caveat:** parameters tuned on these same folds (slightly optimistic, S5);
+  the test-set calibration check is still to do. Along the curve by sex, small
+  deviations remain in both directions (highest-scored women slightly
+  under-predicted), within the noise of small bins.
+- **Course link:** S7 reliability diagram, Brier, ECE, Platt vs isotonic,
+  calibration by segment; S6 class weights cost calibration.
+- **Use in:** R calibration (replaces the v1 numbers of F22-F24). S calibration
+  slide.
+
+### F42 · Fairness audit v2: the same bias as v1; it comes from the data, not from the tuning or the calibration
+- **Finding:** on the recalibrated candidate model (LightGBM v2 + Platt), the
+  audit gives the same picture as v1. Before the mitigation, women and men get
+  different error rates and very different selection rates, but a flag means
+  the same for both. Equalized odds (per-sex thresholds) closes the error-rate
+  gaps for about 0.03 balanced accuracy and opens the precision gap. v2 changed
+  the class weight, the trees and the calibration, and none of the gaps moved
+  by more than 0.02: the bias is not a tuning or calibration artefact; it comes
+  from the proxies for sex in the inputs (F30, F31) and the different base
+  rates.
+- **Evidence:** `python3 -m src.fairness audit` with
+  `BEST_PARAMS_VERSION = "v2"`, out-of-fold, development set
+  (`reports/fairness_dev.json` rows `version = "v2"`,
+  `reports/fairness_details_dev_v2.json`,
+  `reports/figures/fairness_by_sex_dev_v2.png`; section 3d; explained in
+  `notebooks/06_fairness.ipynb`). Best-F1 threshold 0.342 (v1 0.321): TPR
+  women 0.589 vs men 0.783, FPR 0.048 vs 0.220, equalized-odds gap 0.194 (v1
+  0.191), selection 0.107 vs 0.391, four-fifths ratio 0.274 (v1 0.282), PPV
+  0.600 vs 0.608 (gap -0.007; v1 -0.015). Bootstrap 95%: TPR gap [-0.222,
+  -0.167], four-fifths ratio [0.259, 0.288]. Equalized odds vs the
+  balanced-accuracy threshold: equalized-odds gap 0.236 -> 0.003, balanced
+  accuracy 0.812 -> 0.783, precision 0.526 -> 0.497, PPV gap -0.060 -> -0.298,
+  four-fifths ratio 0.341 -> 0.747; it flags more women (selection 0.172 ->
+  0.325, FPR 0.102 -> 0.263) and fewer men (0.506 -> 0.436, FPR 0.338 ->
+  0.264). Equal opportunity: FPR gap -0.115 remains. Demographic parity: ratio
+  0.999, TPR gap +0.167, PPV gap -0.343. Race: Black TPR 0.665 vs White
+  0.759, selection 0.147 vs 0.315.
+- **Caveat:** development set only, out-of-fold; the mitigation uses sex at
+  decision time (F29). The before / after must be confirmed once on the test
+  set. Platt changes practically nothing on v2 (F41), so the raw model would
+  give the same audit.
+- **Course link:** S9 fairness definitions, impossibility result,
+  post-processing (ThresholdOptimizer); S6 thresholds; S7 calibration by group
+  (predictive parity); S8 bootstrap intervals.
+- **Use in:** R fairness audit (replaces the v1 numbers of F25-F28). S fairness
+  slides.
+
+### F43 · Explainability (SHAP): marital status carries two thirds of the score gap between women and men
+- **Finding:** SHAP on LightGBM v2 ranks marital status first, then age,
+  education, hours and occupation. SHAP values add up, so the mean score gap
+  between women and men (the model never sees `sex`) splits exactly into one
+  part per input: two thirds of it goes through marital status, then hours and
+  age; education, although important overall, separates people but hardly
+  women from men. For the same value of an input the effect is about the same
+  for women and men: the gap comes from the different values the two groups
+  have (proxies, F30), not from a different treatment of the same value. This
+  confirms the project hypothesis on the model itself.
+- **Evidence:** `python3 -m src.evaluate shap` (TreeSHAP, out-of-fold: each of
+  the 39,032 people explained by the fold model that never saw them; log-odds),
+  `reports/shap_dev.json`, `reports/figures/shap_importance_dev.png`,
+  `shap_beeswarm_dev.png`, `shap_by_sex_dev.png`, `shap_dependence_dev.png`;
+  explained in `notebooks/05_calibration_explain_test.ipynb`, section 2. Mean
+  |SHAP| per input: marital status 1.20, age 0.74, education 0.52, hours 0.35,
+  occupation 0.34, workclass 0.08; top column Married-civ-spouse 0.71 (its
+  copy `is_married` 0.36). Mean score: women -3.304, men -1.650, gap -1.654 =
+  marital status -1.089 (66%) + hours -0.239 (14%) + age -0.225 (14%) +
+  occupation -0.057 (3%) + education -0.024 (1%) + workclass -0.020 (1%) +
+  base value 0.00001. Mean SHAP of marital status: women -0.72, men +0.37
+  (Married-civ-spouse 15.3% of women vs 60.9% of men, F30). Development set:
+  mean age women 36.9 vs men 39.5, hours 36.4 vs 42.4.
+- **Caveat:** SHAP describes the model, not causes (S8). Duplicate columns
+  (`is_married` / Married-civ-spouse, `workclass_Unknown` /
+  `occupation_Unknown`) share their effect arbitrarily: read the inputs, not
+  these columns. Development set only.
+- **Decision:** no input is removed: marital status is the strongest
+  legitimate signal (among married people women and men earn alike, F31), and
+  the other inputs also differ by sex, so the proxy effect would partly move to
+  them. The bias is handled at the decision step (equalized odds, F42) and
+  reported.
+- **Course link:** S8 SHAP (additivity, global vs local, dependence); S9
+  proxies and fairness through unawareness.
+- **Use in:** R explainability + fairness (why the audit finds a gap). S
+  explainability slide.
+
+### F44 · Test set (once): the development results hold, LightGBM beats the logistic regression, the mitigation generalises
+- **Finding:** on the locked test set, every development result holds. The
+  final model scores what the development CV said (slightly optimistic by
+  0.0035 PR-AUC), stays calibrated overall and by sex, and is better than the
+  logistic regression on the same people, while it is tied with the random
+  forest on ranking. The bias by sex is confirmed, and the equalized-odds
+  mitigation, fixed on the development set, brings both error-rate gaps to
+  about 0 on new people, at the cost measured on development. The SHAP split of
+  the score gap is the same (marital status about two thirds).
+- **Evidence:** `python3 -m src.evaluate test` (2026-10-21; every choice
+  fixed on the development set: v2 parameters, Platt, thresholds, the
+  ThresholdOptimizer; each model refitted on the 39,032 development people,
+  9,758 test people scored); `reports/test_results.json`,
+  `reports/figures/test_pr_curves.png`, `test_calibration.png`,
+  `test_fairness_by_sex.png`; explained in `notebooks/07_test.ipynb`
+  (section 3f). LightGBM v2 test: PR-AUC 0.7148 [0.696, 0.732] (development
+  out-of-fold 0.7183), ROC-AUC 0.8945, Brier 0.1092, ECE 0.009. Logistic
+  regression 0.7041, random forest 0.7140, Dummy 0.239. Paired: LightGBM -
+  LR +0.0107 PR-AUC [+0.0053, +0.0160], Brier -0.0023 [-0.0030, -0.0014];
+  LightGBM - RF +0.0008 [-0.0038, +0.0050], Brier -0.0007 [-0.0013,
+  -0.00001]. Calibration by sex: women 0.113 predicted vs 0.109 observed, men
+  0.304 vs 0.305; Platt ECE 0.0092 vs raw 0.0091. Fairness at the best-F1
+  threshold (0.343, from development): TPR women 0.570 vs men 0.785 (gap
+  -0.215 [-0.272, -0.164]), FPR 0.054 vs 0.220, selection 0.110 vs 0.392
+  (four-fifths 0.282 [0.253, 0.309]), PPV 0.564 vs 0.610. Equalized odds: TPR
+  gap +0.004 [-0.042, +0.047], FPR gap +0.003 [-0.017, +0.024], balanced
+  accuracy 0.814 -> 0.785 (vs the balanced-accuracy threshold), four-fifths
+  0.356 -> 0.745 [0.702, 0.793], PPV gap -0.304 (0.285 vs 0.589). SHAP score
+  gap -1.671: marital status 65%, hours 15%, age 13%, occupation 4%,
+  education 2%, workclass 2%.
+- **Caveat:** one test set of 9,758 people: a single score is uncertain by
+  about +/- 0.02 PR-AUC, so models are compared with paired intervals. Women's
+  PPV rests on about 360 flagged women. Race groups other than White and Black
+  have fewer than 500 test people. The stage was run a second time
+  (`--force`) only to redraw a figure title (plotting bug); all numbers were
+  identical (differences below 1e-16).
+- **Course link:** S5 honest held-out evaluation; S6 thresholds; S7
+  calibration; S8 bootstrap, SHAP; S9 fairness before / after.
+- **Use in:** R results + fairness + conclusion; model card. S results and
+  fairness slides.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
@@ -607,13 +859,75 @@ Reference (defaults, engineered features, section 3): PR-AUC 0.708 / 0.711 /
 
 ---
 
+## 3b-v2. Tuned results v2 (search spaces built from the validation curves)
+
+Same protocol as 3b (Optuna TPE, seed 42, 25 trials, mean 5-fold PR-AUC), with
+each model's search space read from its validation curves (F36, F39, F40).
+Scores from each model's diagnosis script (`python3 -m tuning.<model>
+baseline`), same 5 folds, train vs validation. Best parameters in
+`tuning/results/v2/best_params.json`, used by `src/evaluate.py` and
+`src/fairness.py` from 2026-10-21 (`BEST_PARAMS_VERSION = "v2"`).
+
+| Model | Train PR-AUC | Val PR-AUC | Gap | Val ROC-AUC | Val Brier | Best parameters |
+|---|---|---|---|---|---|---|
+| Logistic Regression | 0.7097 | 0.7083 ± 0.013 | 0.0014 | 0.8887 | 0.1113 | C = 6.80, L2, no class weights |
+| Random Forest | 0.7536 | 0.7149 ± 0.013 | 0.0386 | 0.8915 | 0.1104 | 300 trees, gini, no class weights, min_samples_leaf 6, max_depth 16, min_samples_split 10, max_samples 0.39, max_features sqrt |
+| LightGBM | 0.7341 | 0.7189 ± 0.013 | 0.0152 | 0.8928 | 0.1096 | 950 trees, learning_rate 0.014, num_leaves 12, max_depth 10, min_child_samples 46, subsample 0.80, colsample 0.43, reg_alpha 1.56, reg_lambda 0.74, scale_pos_weight 1 |
+
+Changes vs v1 (3b): ranking unchanged for all three (LR 0.7083 = 0.7083, RF
+0.715 = 0.715, LightGBM 0.7189 vs 0.7190); Brier better for the random forest
+(0.136 -> 0.110) and LightGBM (0.1112 -> 0.1096), the same for LR. No model
+uses class weights in v2. Order unchanged: LR < RF < LightGBM, with LightGBM
++0.004 over the random forest and +0.011 over LR (fold std about 0.013;
+no paired test between families yet).
+
+---
+
 ## 3c. Calibration of the tuned models (development set, out-of-fold)
 
-Predictions are out-of-fold (5 folds, best parameters of section 3b).
-Calibrated rows come from a second 5-fold CV on those predictions. ECE uses 10
-equal-frequency bins. "Top bin" = the 10% of people with the highest predicted
-probability. Run: `python -m src.evaluate calibration`. **PROVISIONAL**
-(tuned on the same folds; test-set check pending).
+Predictions are out-of-fold (5 folds). Calibrated rows come from a second
+5-fold CV on those predictions. ECE uses 10 equal-frequency bins. "Top bin" =
+the 10% of people with the highest predicted probability. PR-AUC here is
+computed on the pooled out-of-fold predictions (not the mean of the folds).
+Run: `python -m src.evaluate calibration` (uses `BEST_PARAMS_VERSION`).
+**PROVISIONAL** (tuned on the same folds; test-set check pending).
+
+### Tuned v2 (section 3b-v2), run 2026-10-21: `reports/calibration_dev.json`
+
+All people:
+
+| Model | Variant | Brier | ECE | PR-AUC | ROC-AUC | Top bin predicted | Top bin observed |
+|---|---|---|---|---|---|---|---|
+| Logistic Regression | raw | 0.1113 | 0.0059 | 0.7080 | 0.8887 | 0.818 | 0.804 |
+| Logistic Regression | Platt | 0.1114 | 0.0060 | 0.7076 | 0.8887 | 0.816 | 0.804 |
+| Logistic Regression | isotonic | 0.1114 | 0.0022 | 0.7030 | 0.8877 | 0.807 | 0.805 |
+| Random Forest | raw | 0.1104 | 0.0109 | 0.7142 | 0.8914 | 0.790 | 0.810 |
+| Random Forest | Platt | 0.1103 | 0.0046 | 0.7140 | 0.8913 | 0.812 | 0.811 |
+| Random Forest | isotonic | 0.1104 | 0.0026 | 0.7087 | 0.8902 | 0.811 | 0.809 |
+| LightGBM | raw | 0.1096 | 0.0058 | 0.7183 | 0.8927 | 0.807 | 0.812 |
+| LightGBM | Platt | 0.1096 | 0.0057 | 0.7180 | 0.8927 | 0.807 | 0.811 |
+| LightGBM | isotonic | 0.1097 | 0.0010 | 0.7135 | 0.8919 | 0.815 | 0.814 |
+
+By sex (mean predicted probability vs observed rate; observed: women 0.109,
+men 0.304):
+
+| Model | Variant | Women predicted | Men predicted | ECE women | ECE men |
+|---|---|---|---|---|---|
+| Logistic Regression | raw | 0.114 | 0.301 | 0.015 | 0.011 |
+| Random Forest | raw | 0.114 | 0.302 | 0.018 | 0.008 |
+| Random Forest | Platt | 0.110 | 0.304 | 0.012 | 0.005 |
+| LightGBM | raw | 0.112 | 0.302 | 0.010 | 0.010 |
+| LightGBM | Platt | 0.112 | 0.302 | 0.010 | 0.010 |
+| LightGBM | isotonic | 0.112 | 0.302 | 0.012 | 0.007 |
+
+Reading (F41): with v2 no model uses class weights, and all three raw models
+are calibrated. **LightGBM v2 raw** has the lowest Brier, an ECE equal to the
+logistic regression's, both sexes close to their observed rates, and Platt
+changes nothing: the candidate is now **LightGBM v2 with its raw
+probabilities**. Not final: the fairness audit and the test-set check come
+first.
+
+### Tuned v1 (section 3b), run 2026-10-20: kept for comparison (F22-F24)
 
 All people:
 
@@ -641,10 +955,8 @@ men 0.304):
 | LightGBM | Platt | 0.112 | 0.302 | 0.009 | 0.012 |
 | LightGBM | isotonic | 0.113 | 0.302 | 0.010 | 0.007 |
 
-Reading: the best candidate so far is **LightGBM + Platt** (lowest Brier,
-ranking kept, ECE 0.008, both sexes close to their observed rates).
-Logistic Regression is simpler and already calibrated but about 0.011 PR-AUC
-lower. Not final: the fairness audit and the test-set check come first.
+Reading at the time: the best candidate was **LightGBM + Platt** (lowest
+Brier, ranking kept, ECE 0.008, both sexes close to their observed rates).
 
 ---
 
@@ -655,9 +967,56 @@ is not used. Definitions fixed before looking at the results: primary =
 equalized odds; legal screen = four-fifths rule; also reported: demographic
 parity, equal opportunity, predictive parity. Mitigation = one technique,
 `ThresholdOptimizer` (per-group thresholds), cross-fitted. Run:
-`python -m src.fairness audit`. Figure: `reports/figures/fairness_by_sex_dev.png`.
-**PROVISIONAL** (development set only; the before / after on the test set is
-still to do).
+`python -m src.fairness audit` (uses `BEST_PARAMS_VERSION`).
+`reports/fairness_dev.json` keeps one set of rows per version (`version` =
+`v1` / `v2`). Explained in `notebooks/06_fairness.ipynb`. **PROVISIONAL**
+(development set only; the before / after on the test set is still to do).
+
+### Tuned v2 + Platt, run 2026-10-21 (F42)
+
+Figure: `reports/figures/fairness_by_sex_dev_v2.png`; per-group rates:
+`reports/fairness_details_dev_v2.json`.
+
+Women vs men at the single best-F1 threshold (0.342):
+
+| Group | n | Base rate | Selection rate | TPR (recall) | FPR | PPV |
+|---|---|---|---|---|---|---|
+| Women | 12,917 | 0.109 | 0.107 | 0.589 | 0.048 | 0.600 |
+| Men | 26,115 | 0.304 | 0.391 | 0.783 | 0.220 | 0.608 |
+
+| Decision rule | Accuracy | Balanced acc. | F1 | Precision | Recall |
+|---|---|---|---|---|---|
+| One threshold (best F1) | 0.824 | 0.800 | 0.672 | 0.607 | 0.753 |
+| One threshold (best balanced accuracy, 0.208) | 0.781 | 0.812 | 0.656 | 0.526 | 0.870 |
+| Equalized odds (ThresholdOptimizer) | 0.758 | 0.783 | 0.622 | 0.497 | 0.829 |
+| Equal opportunity (ThresholdOptimizer) | 0.789 | 0.803 | 0.653 | 0.538 | 0.832 |
+| Demographic parity (ThresholdOptimizer) | 0.759 | 0.772 | 0.612 | 0.497 | 0.797 |
+
+| Decision rule | Selection gap | TPR gap | FPR gap | Equalized-odds gap | PPV gap | Four-fifths ratio |
+|---|---|---|---|---|---|---|
+| One threshold (best F1) | -0.284 | -0.194 | -0.172 | 0.194 | -0.007 | 0.274 |
+| One threshold (best balanced accuracy) | -0.333 | -0.142 | -0.236 | 0.236 | -0.060 | 0.341 |
+| Equalized odds (ThresholdOptimizer) | -0.110 | 0.003 | -0.001 | 0.003 | -0.298 | 0.747 |
+| Equal opportunity (ThresholdOptimizer) | -0.212 | -0.003 | -0.115 | 0.115 | -0.176 | 0.518 |
+| Demographic parity (ThresholdOptimizer) | -0.000 | 0.167 | 0.101 | 0.167 | -0.343 | 0.999 |
+
+95% bootstrap intervals at the best-F1 threshold: TPR gap [-0.222, -0.167],
+FPR gap [-0.180, -0.165], selection gap [-0.292, -0.276], four-fifths ratio
+[0.259, 0.288].
+
+By race at the best-F1 threshold:
+
+| Race | n | Base rate | Selection rate | TPR | FPR | PPV |
+|---|---|---|---|---|---|---|
+| White | 33,333 | 0.254 | 0.315 | 0.759 | 0.164 | 0.612 |
+| Black | 3,784 | 0.124 | 0.147 | 0.665 | 0.074 | 0.559 |
+| Asian-Pac-Islander | 1,206 | 0.263 | 0.350 | 0.773 | 0.199 | 0.581 |
+| Amer-Indian-Eskimo (small) | 383 | 0.110 | 0.172 | 0.619 | 0.117 | 0.394 |
+| Other (small) | 326 | 0.123 | 0.147 | 0.675 | 0.073 | 0.562 |
+
+### Tuned v1 + Platt, run 2026-10-20: kept for comparison (F25-F28)
+
+Figure: `reports/figures/fairness_by_sex_dev.png`.
 
 Women vs men at the single best-F1 threshold (0.321):
 
@@ -752,6 +1111,35 @@ information in the data, not the model. The value of v2 is to explain *why*
 
 ---
 
+## 3f. Test set results (once, 2026-10-21)
+
+Run: `python3 -m src.evaluate test`. All choices fixed on the development set;
+models refitted on the 39,032 development people; 9,758 test people (women
+10.9% and men 30.5% high earners). File: `reports/test_results.json`;
+explained in `notebooks/07_test.ipynb` (F44).
+
+| Model | Dev PR-AUC (OOF) | Test PR-AUC [95%] | Test ROC-AUC | Test Brier | Test ECE |
+|---|---|---|---|---|---|
+| Dummy | 0.239 | 0.239 | 0.500 | 0.182 | 0.000 |
+| Logistic Regression v2 | 0.708 | 0.704 [0.684, 0.724] | 0.890 | 0.112 | 0.010 |
+| Random Forest v2 | 0.714 | 0.714 [0.696, 0.733] | 0.893 | 0.110 | 0.007 |
+| **LightGBM v2 (final)** | 0.718 | **0.715 [0.696, 0.732]** | **0.894** | **0.109** | 0.009 |
+
+Paired differences (same test people): LightGBM - LR PR-AUC +0.011 [+0.005,
++0.016]; LightGBM - RF +0.001 [-0.004, +0.005].
+
+Fairness of LightGBM v2 + Platt on the test set (rules fixed on development):
+
+| Decision rule | Balanced acc. | F1 | TPR gap | FPR gap | Equalized-odds gap | PPV gap | Four-fifths ratio |
+|---|---|---|---|---|---|---|---|
+| One threshold (best F1, 0.343) | 0.799 | 0.670 | -0.215 | -0.166 | 0.215 | -0.046 | 0.282 |
+| One threshold (best balanced accuracy, 0.208) | 0.814 | 0.659 | -0.140 | -0.222 | 0.222 | -0.082 | 0.356 |
+| Equalized odds (ThresholdOptimizer) | 0.785 | 0.627 | +0.004 | +0.003 | 0.004 | -0.304 | 0.745 |
+| Equal opportunity (ThresholdOptimizer) | 0.809 | 0.658 | +0.003 | -0.111 | 0.111 | -0.183 | 0.528 |
+| Demographic parity (ThresholdOptimizer) | 0.775 | 0.614 | +0.137 | +0.100 | 0.137 | -0.349 | 0.983 |
+
+---
+
 ## 4. The cutoff trade-off (LightGBM, engineered features, out-of-fold)
 
 Reading: of everyone the model flags as high income, at least the "precision"
@@ -787,7 +1175,7 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Calibration protocol: out-of-fold predictions on the development set, Platt and isotonic scored by a second 5-fold CV, reliability by sex; test set not used | Soumaya with Claude | Done in `src/evaluate.py` (`python -m src.evaluate calibration`), merged in main |
 | EDA notebook aligned with the audit case: new Steps 4d (groups, proxies), 5 (framing), 7b (group sizes) and 8 (bias sources, hand-over); target shown as `high_income` | Soumaya with Claude, 2026-10-19 | Done, merged in main together with Manel's Step 9 preview |
 | Fairness protocol: sex as the audited attribute; equalized odds primary and four-fifths rule as legal screen (fixed before the results); one mitigation, `ThresholdOptimizer`, cross-fitted on out-of-fold scores; race only audited | Soumaya with Claude | Done on the development set in `src/fairness.py` (`python -m src.fairness audit`), merged in main; test-set evaluation pending |
-| Candidate final model: LightGBM + Platt scaling; logistic regression as the transparent benchmark; the random forest tuned to show bias vs variance | Proposed by Claude from F19-F24; Manel agrees (2026-10-19) | Provisional: confirm after the fairness audit and the single test-set evaluation |
+| Candidate final model: LightGBM + Platt scaling; logistic regression as the transparent benchmark; the random forest tuned to show bias vs variance | Proposed by Claude from F19-F24; Manel agrees (2026-10-19) | Updated 2026-10-21: LightGBM **v2 with raw probabilities** (Platt no longer needed, F41), to confirm with the team; then the fairness audit and the single test-set evaluation |
 | Tuning protocol: Optuna (TPE, seed 42), 25 trials per model, objective = mean 5-fold CV PR-AUC; class weighting is a tuned hyperparameter; MLflow logging in a SQLite file | Soumaya with Claude | Done (first in `src/train.py`, now `tuning/tune.py`); results in `tuning/results/v1/` |
 | Engineered features: is_married, has_degree, part_time, overtime, age_squared | Soumaya with Claude, 2026-10-18 | In `src/pipeline.py`, merged in main |
 | Cutoff: best-F1 point for the neutral comparison; clients choose their own | Proposed | Open: confirm with the team |
@@ -795,10 +1183,10 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Architecture: `src/` = library only (config, data, pipeline, models, cv, evaluate, fairness); `tuning/` = every training and tuning script, results in `tuning/results/<version>/`; notebooks only explain; `src/train.py` split into `src/models.py`, `src/cv.py`, `tuning/baseline.py`, `tuning/tune.py` | Manel, 2026-10-19 | Done, merged in main |
 | Random forest diagnosis and tuning v2 (section 3e): search space read from the validation curves; final random forest = tuned v2 | Manel, 2026-10-20 | Done (F32, F36); `tuning/results/v2/best_params.json` |
 | Logistic regression diagnosis (F37): baseline, C curves for L1 and L2, Elastic Net and Lasso zeros, interactions, search methods; same pattern as `tuning/random_forest.py` | Soumaya with Claude, 2026-10-20 | Done: `tuning/logistic_regression.py`, `tuning/results/logistic_regression/`, `notebooks/02_logistic_regression.ipynb`; uncommitted |
-| Logistic regression tuning v2 search space: C 0.01-100 (log), penalty fixed L2, class_weight fixed None; no Elastic Net | Proposed by Soumaya with Claude from the curves (F37) | Open: team agreement to edit `suggest_params()` in `tuning/tune.py`, then `python3 -m tuning.tune --version v2 --model lr`; not run |
+| Logistic regression tuning v2 search space: C 0.01-100 (log), penalty fixed L2, class_weight fixed None; no Elastic Net | Proposed by Soumaya with Claude from the curves (F37) | Done 2026-10-21 (F40): C = 6.80, same scores as v1 |
 | Interaction rule, fixed before the run: an interaction is kept only if it adds >= 0.001 mean validation PR-AUC over tuned v1 AND is better in >= 4 of 5 folds | Soumaya with Claude, 2026-10-20 | Applied: only married x hours passes (F37) |
 | Add married x hours (`is_married` x `hours-per-week`) to the logistic regression Pipeline | Proposed (F37) | Open: needs a change in `src/pipeline.py` (shared) or an LR-only Pipeline, team agreement, and a fairness re-check by sex |
-| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | To do: `tuning/lightgbm.py` (same pattern as `tuning/random_forest.py`), `notebooks/04_lightgbm.ipynb`, then `python3 -m tuning.tune --version v2 --model lgbm`; if v2 becomes the final model, re-run calibration and the fairness audit on it |
+| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | Done 2026-10-21 (F38, F39); calibration (F41) and fairness audit (F42) re-run on v2 |
 
 ---
 

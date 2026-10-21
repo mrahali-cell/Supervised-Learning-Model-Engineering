@@ -41,10 +41,13 @@ def suggest_params(trial, name):
     hyperparameter too, so it is validated like any other (S6).
     v1 spaces (Soumaya, git tag `baseline-v1`); edit them for v2."""
     if name == "Logistic Regression":
+        # v2 (Soumaya): ranges read from the validation curves (tuning/results/logistic_regression/)
         return {
-            "C": trial.suggest_float("C", 1e-3, 1e2, log=True),
-            "penalty": trial.suggest_categorical("penalty", ["l1", "l2"]),
-            "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
+            # fixed: a list with one value means "always this value"
+            "penalty": trial.suggest_categorical("penalty", ["l2"]),
+            "class_weight": trial.suggest_categorical("class_weight", [None]),
+            # searched: the plateau of the C curves, plus one decade of margin
+            "C": trial.suggest_float("C", 1e-2, 1e2, log=True),
         }
     if name == "Random Forest":
         # v2 (Manel): ranges read from the validation curves (tuning/results/random_forest/)
@@ -61,17 +64,20 @@ def suggest_params(trial, name):
             "max_features": trial.suggest_categorical("max_features", ["sqrt", "log2", 0.3]),
         }
     if name == "LightGBM":
+        # v2 (Hadiqa): ranges read from the validation curves (tuning/results/lightgbm/)
         return {
-            "n_estimators": trial.suggest_int("n_estimators", 100, 600, step=50),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
-            "num_leaves": trial.suggest_int("num_leaves", 8, 96),
-            "min_child_samples": trial.suggest_int("min_child_samples", 10, 100),
-            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-            "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
-            "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
-            # ~3.2 = N_negative / N_positive is the S6 starting heuristic
-            "scale_pos_weight": trial.suggest_float("scale_pos_weight", 1.0, 4.0),
+            # fixed: a list with one value means "always this value"
+            "scale_pos_weight": trial.suggest_categorical("scale_pos_weight", [1.0]),
+            # searched: the plateau of each curve, plus a margin
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.1, log=True),
+            "n_estimators": trial.suggest_int("n_estimators", 100, 1000, step=50),
+            "num_leaves": trial.suggest_int("num_leaves", 8, 63),
+            "max_depth": trial.suggest_int("max_depth", 3, 12),
+            "min_child_samples": trial.suggest_int("min_child_samples", 10, 200, log=True),
+            "subsample": trial.suggest_float("subsample", 0.7, 1.0),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.3, 1.0),
+            "reg_alpha": trial.suggest_float("reg_alpha", 0.01, 30.0, log=True),
+            "reg_lambda": trial.suggest_float("reg_lambda", 0.01, 100.0, log=True),
         }
     raise ValueError(f"unknown model: {name}")
 
