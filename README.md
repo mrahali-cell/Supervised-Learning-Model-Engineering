@@ -54,6 +54,7 @@ src/                  LIBRARY: imported by everything else, never trains a model
     cv.py               cross-validation helpers: out-of-fold scores, train vs validation scores
     evaluate.py         calibration, SHAP explanations, final test-set evaluation
     fairness.py         fairness audit and mitigation
+    
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py         stage 1: all models with default parameters
     lightgbm.py         LightGBM diagnosis: baseline table + validation curves
