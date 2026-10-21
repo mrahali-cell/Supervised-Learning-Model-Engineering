@@ -35,7 +35,7 @@ Every finding and decision, with its numbers, is in
 | 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for all three models (used from now on) |
 | 8 | Calibration | Session 7 | `src/evaluate.py`, `notebooks/05_calibration_explain_test.ipynb` | done on v2 (LightGBM v2 needs no recalibration) |
 | 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py` | to do |
-| 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py` | done on the development set (v1); to re-run on v2 |
+| 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py`, `notebooks/06_fairness.ipynb` | done on the development set, v1 and v2 |
 | 11 | Test set, once: final metrics, fairness before / after, model card | | | to do |
 
 5-fold stratified cross-validation on the development set measures every
@@ -70,6 +70,7 @@ notebooks/            EXPLANATIONS: read the results files and comment them, no 
     03_random_forest.ipynb
     04_lightgbm.ipynb
     05_calibration_explain_test.ipynb  final model (LightGBM v2): calibration, then SHAP and the test set
+    06_fairness.ipynb             fairness audit by sex: v1 and v2 (recalibrated LightGBM), before / after
 reports/              calibration and fairness outputs (json + figures)
 docs/findings_log.md  the log of every finding and decision (for the report and the oral)
 requirements.txt      Python libraries
@@ -138,7 +139,7 @@ instead of `.venv`, and it passes no argument (`baseline`, `curves`...).
 | `python3 -m tuning.random_forest curves --param max_depth` | One curve only | same files, that curve replaced |
 | `python3 -m tuning.tune --version v2 --model rf` | Optuna, 25 trials (`--trials N` to change); `--model` = `lr`, `rf` or `lgbm`, repeatable; no `--model` = all three | `tuning/results/v2/best_params.json` + MLflow runs |
 | `python3 -m src.evaluate calibration` | Calibration on out-of-fold predictions: Brier, ECE, Platt, isotonic, by sex | `reports/calibration_dev.json`, `reports/figures/`, `reports/calibration_lightgbm_comparison.png` |
-| `python3 -m src.fairness audit` | Fairness audit by sex + mitigation (development set) | `reports/fairness_dev.json`, `reports/figures/` |
+| `python3 -m src.fairness audit` | Fairness audit by sex + mitigation (development set) | `reports/fairness_dev.json` (one set of rows per version), `reports/fairness_details_dev_<version>.json` and `reports/figures/fairness_by_sex_dev_<version>.png` (no suffix for v1) |
 | `mlflow ui --backend-store-uri sqlite:///mlflow.db` | Browse every Optuna trial | opens in the browser |
 
 **Notebooks:** open them in VS Code and click **Run All**. They only read the

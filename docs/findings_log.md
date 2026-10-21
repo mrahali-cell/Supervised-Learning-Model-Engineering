@@ -4,7 +4,7 @@ Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
 (7 min + 3 min Q&A). Last updated 2026-10-21 (after the LightGBM
 diagnosis and tuning v2, and the logistic regression tuning v2: v2 now
-complete for the three models; calibration on v2).
+complete for the three models; calibration and fairness audit on v2).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -332,7 +332,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   calibration by group.
 - **Use in:** R calibration + fairness. S fairness slide.
 
-### F25 · Fairness audit (before): unequal error rates and selection, equal meaning of a flag
+### F25 · Fairness audit (before): unequal error rates and selection, equal meaning of a flag (v1; v2 in F42)
 - **Finding:** with one group-blind threshold, the model finds far fewer of the
   high-earning women than of the high-earning men (62% vs 81%), flags women much
   less often overall (11.8% vs 41.7%), and wrongly flags far fewer lower-earning
@@ -349,7 +349,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   four-fifths rule, base-rate theorem; S8 uncertainty of slice metrics.
 - **Use in:** R fairness (core). S fairness slide.
 
-### F26 · Mitigation: equalized odds closes the error-rate gaps, at a modest cost, and widens the precision gap
+### F26 · Mitigation: equalized odds closes the error-rate gaps, at a modest cost, and widens the precision gap (v1; v2 in F42)
 - **Finding:** per-group thresholds (Fairlearn `ThresholdOptimizer`,
   post-processing) bring the TPR and FPR of women and men together. The price is
   about 3 points of balanced accuracy, and a flag now means less for women than
@@ -364,7 +364,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S9 post-processing and the fairness-accuracy trade-off.
 - **Use in:** R fairness (before / after). S fairness slide.
 
-### F27 · The three definitions cannot all be satisfied (measured)
+### F27 · The three definitions cannot all be satisfied (measured) (v1; v2 in F42)
 - **Finding:** enforcing equal opportunity or demographic parity instead of
   equalized odds moves the other gaps in different directions.
 - **Evidence:** section 3d. Equal opportunity: TPR gap -0.001 but FPR gap
@@ -376,7 +376,7 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
 - **Course link:** S9 "fairness definitions conflict when base rates differ".
 - **Use in:** R fairness (discussion). S fairness slide.
 
-### F28 · Race: gaps exist too, and small groups are unstable
+### F28 · Race: gaps exist too, and small groups are unstable (v1; v2 in F42)
 - **Finding:** at the same threshold, Black people are selected about half as
   often as White people and have a lower TPR; Asian-Pac-Islander people look
   like White people. Two groups are too small for reliable metrics.
@@ -646,9 +646,8 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   0.7019 (a small C).
 - **Caveat:** best trial picked on the same folds (S5), negligible on a flat
   curve. The married x hours interaction (F37) is not part of v2.
-- **Next:** calibration re-run on v2 on 2026-10-21 (F41). Still to re-run on
-  v2: the fairness audit (`python3 -m src.fairness audit`): section 3d and
-  F25-F27 still describe v1.
+- **Next:** calibration (F41) and fairness audit (F42) re-run on v2 on
+  2026-10-21.
 - **Course link:** S2 regularization; S5 validation curves and TPE search.
 - **Use in:** R tuning (logistic regression) and model choice. S tuning slide.
 
@@ -684,6 +683,43 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   calibration by segment; S6 class weights cost calibration.
 - **Use in:** R calibration (replaces the v1 numbers of F22-F24). S calibration
   slide.
+
+### F42 · Fairness audit v2: the same bias as v1; it comes from the data, not from the tuning or the calibration
+- **Finding:** on the recalibrated candidate model (LightGBM v2 + Platt), the
+  audit gives the same picture as v1. Before the mitigation, women and men get
+  different error rates and very different selection rates, but a flag means
+  the same for both. Equalized odds (per-sex thresholds) closes the error-rate
+  gaps for about 0.03 balanced accuracy and opens the precision gap. v2 changed
+  the class weight, the trees and the calibration, and none of the gaps moved
+  by more than 0.02: the bias is not a tuning or calibration artefact; it comes
+  from the proxies for sex in the inputs (F30, F31) and the different base
+  rates.
+- **Evidence:** `python3 -m src.fairness audit` with
+  `BEST_PARAMS_VERSION = "v2"`, out-of-fold, development set
+  (`reports/fairness_dev.json` rows `version = "v2"`,
+  `reports/fairness_details_dev_v2.json`,
+  `reports/figures/fairness_by_sex_dev_v2.png`; section 3d; explained in
+  `notebooks/06_fairness.ipynb`). Best-F1 threshold 0.342 (v1 0.321): TPR
+  women 0.589 vs men 0.783, FPR 0.048 vs 0.220, equalized-odds gap 0.194 (v1
+  0.191), selection 0.107 vs 0.391, four-fifths ratio 0.274 (v1 0.282), PPV
+  0.600 vs 0.608 (gap -0.007; v1 -0.015). Bootstrap 95%: TPR gap [-0.222,
+  -0.167], four-fifths ratio [0.259, 0.288]. Equalized odds vs the
+  balanced-accuracy threshold: equalized-odds gap 0.236 -> 0.003, balanced
+  accuracy 0.812 -> 0.783, precision 0.526 -> 0.497, PPV gap -0.060 -> -0.298,
+  four-fifths ratio 0.341 -> 0.747; it flags more women (selection 0.172 ->
+  0.325, FPR 0.102 -> 0.263) and fewer men (0.506 -> 0.436, FPR 0.338 ->
+  0.264). Equal opportunity: FPR gap -0.115 remains. Demographic parity: ratio
+  0.999, TPR gap +0.167, PPV gap -0.343. Race: Black TPR 0.665 vs White
+  0.759, selection 0.147 vs 0.315.
+- **Caveat:** development set only, out-of-fold; the mitigation uses sex at
+  decision time (F29). The before / after must be confirmed once on the test
+  set. Platt changes practically nothing on v2 (F41), so the raw model would
+  give the same audit.
+- **Course link:** S9 fairness definitions, impossibility result,
+  post-processing (ThresholdOptimizer); S6 thresholds; S7 calibration by group
+  (predictive parity); S8 bootstrap intervals.
+- **Use in:** R fairness audit (replaces the v1 numbers of F25-F28). S fairness
+  slides.
 
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
@@ -847,9 +883,56 @@ is not used. Definitions fixed before looking at the results: primary =
 equalized odds; legal screen = four-fifths rule; also reported: demographic
 parity, equal opportunity, predictive parity. Mitigation = one technique,
 `ThresholdOptimizer` (per-group thresholds), cross-fitted. Run:
-`python -m src.fairness audit`. Figure: `reports/figures/fairness_by_sex_dev.png`.
-**PROVISIONAL** (development set only; the before / after on the test set is
-still to do).
+`python -m src.fairness audit` (uses `BEST_PARAMS_VERSION`).
+`reports/fairness_dev.json` keeps one set of rows per version (`version` =
+`v1` / `v2`). Explained in `notebooks/06_fairness.ipynb`. **PROVISIONAL**
+(development set only; the before / after on the test set is still to do).
+
+### Tuned v2 + Platt, run 2026-10-21 (F42)
+
+Figure: `reports/figures/fairness_by_sex_dev_v2.png`; per-group rates:
+`reports/fairness_details_dev_v2.json`.
+
+Women vs men at the single best-F1 threshold (0.342):
+
+| Group | n | Base rate | Selection rate | TPR (recall) | FPR | PPV |
+|---|---|---|---|---|---|---|
+| Women | 12,917 | 0.109 | 0.107 | 0.589 | 0.048 | 0.600 |
+| Men | 26,115 | 0.304 | 0.391 | 0.783 | 0.220 | 0.608 |
+
+| Decision rule | Accuracy | Balanced acc. | F1 | Precision | Recall |
+|---|---|---|---|---|---|
+| One threshold (best F1) | 0.824 | 0.800 | 0.672 | 0.607 | 0.753 |
+| One threshold (best balanced accuracy, 0.208) | 0.781 | 0.812 | 0.656 | 0.526 | 0.870 |
+| Equalized odds (ThresholdOptimizer) | 0.758 | 0.783 | 0.622 | 0.497 | 0.829 |
+| Equal opportunity (ThresholdOptimizer) | 0.789 | 0.803 | 0.653 | 0.538 | 0.832 |
+| Demographic parity (ThresholdOptimizer) | 0.759 | 0.772 | 0.612 | 0.497 | 0.797 |
+
+| Decision rule | Selection gap | TPR gap | FPR gap | Equalized-odds gap | PPV gap | Four-fifths ratio |
+|---|---|---|---|---|---|---|
+| One threshold (best F1) | -0.284 | -0.194 | -0.172 | 0.194 | -0.007 | 0.274 |
+| One threshold (best balanced accuracy) | -0.333 | -0.142 | -0.236 | 0.236 | -0.060 | 0.341 |
+| Equalized odds (ThresholdOptimizer) | -0.110 | 0.003 | -0.001 | 0.003 | -0.298 | 0.747 |
+| Equal opportunity (ThresholdOptimizer) | -0.212 | -0.003 | -0.115 | 0.115 | -0.176 | 0.518 |
+| Demographic parity (ThresholdOptimizer) | -0.000 | 0.167 | 0.101 | 0.167 | -0.343 | 0.999 |
+
+95% bootstrap intervals at the best-F1 threshold: TPR gap [-0.222, -0.167],
+FPR gap [-0.180, -0.165], selection gap [-0.292, -0.276], four-fifths ratio
+[0.259, 0.288].
+
+By race at the best-F1 threshold:
+
+| Race | n | Base rate | Selection rate | TPR | FPR | PPV |
+|---|---|---|---|---|---|---|
+| White | 33,333 | 0.254 | 0.315 | 0.759 | 0.164 | 0.612 |
+| Black | 3,784 | 0.124 | 0.147 | 0.665 | 0.074 | 0.559 |
+| Asian-Pac-Islander | 1,206 | 0.263 | 0.350 | 0.773 | 0.199 | 0.581 |
+| Amer-Indian-Eskimo (small) | 383 | 0.110 | 0.172 | 0.619 | 0.117 | 0.394 |
+| Other (small) | 326 | 0.123 | 0.147 | 0.675 | 0.073 | 0.562 |
+
+### Tuned v1 + Platt, run 2026-10-20: kept for comparison (F25-F28)
+
+Figure: `reports/figures/fairness_by_sex_dev.png`.
 
 Women vs men at the single best-F1 threshold (0.321):
 
@@ -990,7 +1073,7 @@ for our neutral comparison we use the best-F1 point (precision 0.59, recall
 | Logistic regression tuning v2 search space: C 0.01-100 (log), penalty fixed L2, class_weight fixed None; no Elastic Net | Proposed by Soumaya with Claude from the curves (F37) | Done 2026-10-21 (F40): C = 6.80, same scores as v1 |
 | Interaction rule, fixed before the run: an interaction is kept only if it adds >= 0.001 mean validation PR-AUC over tuned v1 AND is better in >= 4 of 5 folds | Soumaya with Claude, 2026-10-20 | Applied: only married x hours passes (F37) |
 | Add married x hours (`is_married` x `hours-per-week`) to the logistic regression Pipeline | Proposed (F37) | Open: needs a change in `src/pipeline.py` (shared) or an LR-only Pipeline, team agreement, and a fairness re-check by sex |
-| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | Done 2026-10-21 (F38, F39); calibration re-run on v2 (F41); fairness audit on v2 still to do |
+| LightGBM diagnosis and tuning v2 (final model) | Hadiqa | Done 2026-10-21 (F38, F39); calibration (F41) and fairness audit (F42) re-run on v2 |
 
 ---
 

@@ -46,7 +46,7 @@ from sklearn.model_selection import StratifiedKFold
 from src.data import FEATURES, RANDOM_STATE, TARGET, get_cv, load_data
 from src.evaluate import COLORS, FIGURES_DIR, calibrate_out_of_fold
 from src.pipeline import build_pipeline
-from src.config import BEST_PARAMS, EXPERIMENT, REPORTS_DIR, TRACKING_URI
+from src.config import BEST_PARAMS, BEST_PARAMS_VERSION, EXPERIMENT, REPORTS_DIR, TRACKING_URI
 from src.cv import best_f1_point, cross_validate_pipeline
 from src.models import build_model
 
@@ -151,7 +151,7 @@ def bootstrap_gaps(y, pred, sex, n=N_BOOTSTRAP):
             for k in ["tpr_diff", "fpr_diff", "dp_diff", "four_fifths_ratio"]}
 
 
-def plot_groups(results, y, sex):
+def plot_groups(results, y, sex, path):
     """Selection rate, TPR, FPR and PPV for women and men under each decision rule."""
     methods = [m for m in results if m != "single threshold (best F1)"]
     fig, axes = plt.subplots(1, 4, figsize=(15, 4.2), sharey=True)
@@ -168,10 +168,11 @@ def plot_groups(results, y, sex):
         ax.grid(axis="y", alpha=0.25)
     axes[0].set_ylabel("Rate")
     axes[0].legend(fontsize=8)
-    fig.suptitle("Women vs men under each decision rule (out-of-fold, development set)")
+    fig.suptitle(f"Women vs men under each decision rule, {CANDIDATE} {BEST_PARAMS_VERSION} "
+                 "+ Platt (out-of-fold, development set)")
     fig.tight_layout()
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIGURES_DIR / "fairness_by_sex_dev.png", dpi=150)
+    fig.savefig(path, dpi=150)
     plt.close(fig)
 
 
@@ -226,14 +227,37 @@ def run_audit():
     print("\nBy race at the best-F1 threshold (small groups are unstable)\n")
     print(race_table.round(3).to_string())
 
-    plot_groups(results, y, sex)
+    # One file name per version; the v1 files keep their original names
+    suffix = "" if BEST_PARAMS_VERSION == "v1" else f"_{BEST_PARAMS_VERSION}"
+    figure_path = FIGURES_DIR / f"fairness_by_sex_dev{suffix}.png"
+    details_path = REPORTS_DIR / f"fairness_details_dev{suffix}.json"
+    plot_groups(results, y, sex, figure_path)
     REPORTS_DIR.mkdir(exist_ok=True)
-    summary.to_json(REPORTS_DIR / "fairness_dev.json", orient="records", indent=2)
+
+    # fairness_dev.json keeps every version: only this version's rows are replaced
+    summary_path = REPORTS_DIR / "fairness_dev.json"
+    old = pd.read_json(summary_path) if summary_path.exists() else pd.DataFrame()
+    if not old.empty:
+        if "version" not in old:  # rows written before the version was recorded
+            old.insert(0, "version", "v1")
+        old = old[old["version"] != BEST_PARAMS_VERSION]
+    summary.insert(0, "version", BEST_PARAMS_VERSION)
+    pd.concat([old, summary], ignore_index=True).to_json(summary_path, orient="records", indent=2)
+
+    # Per-group rates, thresholds and intervals, so the notebooks only read files
+    records = lambda t: t.rename_axis("group").reset_index().to_dict("records")
+    details = {"version": BEST_PARAMS_VERSION,
+               "thresholds": {"best_f1": f1_threshold, "best_balanced_accuracy": ba_threshold},
+               "by_sex": {name: records(table) for name, table in by_group.items()},
+               "by_race_best_f1": records(race_table),
+               "bootstrap_95_best_f1": intervals}
+    details_path.write_text(json.dumps(details, indent=2, default=float))
 
     mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT)
     with mlflow.start_run(run_name="fairness audit (development, out-of-fold)"):
-        mlflow.log_params({"model": f"{CANDIDATE} + Platt", "sensitive_feature": "sex",
+        mlflow.log_params({"model": f"{CANDIDATE} + Platt", "version": BEST_PARAMS_VERSION,
+                           "sensitive_feature": "sex",
                            "primary_definition": "equalized odds",
                            "legal_screen": "four-fifths rule",
                            "mitigation": "ThresholdOptimizer (post-processing)"})
@@ -241,9 +265,10 @@ def run_audit():
             key = row["rule"].split(" (")[0].replace(" ", "_")
             mlflow.log_metrics({f"{key}_{k}": float(v) for k, v in row.items()
                                 if k != "rule"})
-        mlflow.log_artifact(str(FIGURES_DIR / "fairness_by_sex_dev.png"), "figures")
-        mlflow.log_artifact(str(REPORTS_DIR / "fairness_dev.json"))
-    print(f"\nFigure in {FIGURES_DIR}; metrics in {REPORTS_DIR / 'fairness_dev.json'}")
+        mlflow.log_artifact(str(figure_path), "figures")
+        mlflow.log_artifact(str(summary_path))
+        mlflow.log_artifact(str(details_path))
+    print(f"\nFigure in {figure_path}; metrics in {summary_path} and {details_path}")
     return summary
 
 
