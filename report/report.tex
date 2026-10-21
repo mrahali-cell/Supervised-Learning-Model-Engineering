@@ -18,7 +18,6 @@
 \setlength{\parskip}{3pt}
 \emergencystretch=3em
 \graphicspath{{figures/}{../reports/figures/}{../tuning/results/mlflow/}}
-\newcommand{\missing}[1]{\textcolor{red!75!black}{\textbf{[MISSING: #1]}}}
 \newcommand{\code}[1]{\texttt{#1}}
 
 \title{\vspace{-1.2cm}Auditing an income-prediction model for sex bias\\[2pt]
@@ -310,7 +309,12 @@ Hadiqa Javaid & LightGBM diagnosis, validation curves and tuning v2; logistic re
 \label{fig:history}
 \end{figure}
 
-\missing{screenshot of the MLflow runs table (the six studies, one expanded to its 25 trials), from \code{mlflow ui --backend-store-uri sqlite:///mlflow.db}}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{mlflow_runs.png}
+\caption{The MLflow runs table of experiment \code{adult-income-bias-audit} (164 runs). The LightGBM v2 study (parent run, best CV PR-AUC 0.7189) is expanded to show its trial runs, each with its mean 5-fold CV PR-AUC, the standard deviation over the folds and the Brier score; the evaluation runs (calibration, fairness, SHAP) sit above it.}
+\label{fig:mlflow}
+\end{figure}
 
 \section{Tuned hyperparameters (v2)}
 \label{app:params}
