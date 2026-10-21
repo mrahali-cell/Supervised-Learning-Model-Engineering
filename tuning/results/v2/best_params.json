@@ -20,5 +20,10 @@
     "colsample_bytree": 0.42878328256161574,
     "reg_alpha": 1.5567434572002916,
     "reg_lambda": 0.7385607696113071
+  },
+  "Logistic Regression": {
+    "penalty": "l2",
+    "class_weight": null,
+    "C": 6.79657809075816
   }
 }

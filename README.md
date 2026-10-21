@@ -32,10 +32,10 @@ Every finding and decision, with its numbers, is in
 | 4 | Pipeline: preprocessing + feature engineering | Session 5 | `src/pipeline.py` | done |
 | 5 | Baseline models: Dummy, logistic regression, random forest, LightGBM | Sessions 2-4 | `tuning/baseline.py` | done |
 | 6 | Diagnosis: train vs validation, validation curves | Sessions 3-5 | `tuning/random_forest.py`, `notebooks/0*_*.ipynb` | random forest, LR & LightGBM done |
-| 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for the random forest, LightGBM |
-| 8 | Calibration | Session 7 | `src/evaluate.py` | done on v1 |
+| 7 | Hyperparameter tuning (Optuna, tracked in MLflow) | Session 5 | `tuning/tune.py` | v1 done; v2 done for all three models (used from now on) |
+| 8 | Calibration | Session 7 | `src/evaluate.py` | done on v1; to re-run on v2 |
 | 9 | Explainability (SHAP) | Session 8 | `src/evaluate.py` | to do |
-| 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py` | done on the development set |
+| 10 | Fairness audit by sex + mitigation | Session 9 | `src/fairness.py` | done on the development set (v1); to re-run on v2 |
 | 11 | Test set, once: final metrics, fairness before / after, model card | | | to do |
 
 5-fold stratified cross-validation on the development set measures every
@@ -57,11 +57,11 @@ src/                  LIBRARY: imported by everything else, never trains a model
 tuning/               EXPERIMENTS: every training and tuning script you run
     baseline.py         stage 1: all models with default parameters
     random_forest.py    random forest diagnosis: baseline table + validation curves (Manel)
-    lightgbm.py         LightGBM diagnosis: baseline table + validation curves (Hadiqa, to write)
+    lightgbm.py         LightGBM diagnosis: baseline table + validation curves (Hadiqa)
     tune.py             stage 2: Optuna search + MLflow tracking, one search space per model
     results/            NUMBERS: everything the scripts produce
         v1/best_params.json         first Optuna run, all three models (Soumaya)
-        v2/best_params.json         tuning after the diagnosis (random forest so far)
+        v2/best_params.json         tuning after the diagnosis, all three models (used now)
         random_forest/              baseline.csv, curves.csv, curves/*.png
         lightgbm/                   same files for LightGBM (Hadiqa)
 notebooks/            EXPLANATIONS: read the results files and comment them, no training
@@ -145,8 +145,8 @@ files in `tuning/results/` and `reports/`, so they run in seconds.
 
 **Which tuned version is used:** `src/evaluate.py` and `src/fairness.py` read
 `tuning/results/<version>/best_params.json`, with the version set in
-`src/config.py` (`BEST_PARAMS_VERSION`, currently `v1`). That file must contain
-all three models, so keep `v1` until v2 exists for all of them.
+`src/config.py` (`BEST_PARAMS_VERSION`, currently `v2`). That file must contain
+all three models.
 
 **Tuning a new model or version:** copy `tuning/random_forest.py` for the
 diagnosis of your model, edit its search space in `suggest_params()` in
@@ -189,7 +189,9 @@ scaling; categories: "Unknown", then one-hot) -> your model.
 | Cross-validation | 5-fold `StratifiedKFold` on the development set |
 | Metrics | PR-AUC (ranking, floor 0.239) and ROC-AUC; Brier and ECE (probabilities); by sex: selection rate, TPR, FPR, precision |
 | Fairness definition | Equalized odds (primary), four-fifths rule (legal screen) |
+| Final logistic regression | Tuned v2 (C = 6.80, L2): same as v1, 0.708 PR-AUC, Brier 0.111 (F40) |
 | Final random forest | Tuned v2: same ranking as v1 (0.715 PR-AUC), Brier 0.110 instead of 0.136 (F36) |
+| Final LightGBM | Tuned v2: same ranking as v1 (0.719 PR-AUC), smaller gap, Brier 0.1096 instead of 0.1112 (F39) |
 | Candidate final model | LightGBM + Platt scaling; logistic regression as the transparent benchmark |
 
 ---

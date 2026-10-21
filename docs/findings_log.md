@@ -3,7 +3,8 @@
 Supervised Learning & Model Engineering (MSA-DATB09-04).
 Working notes for the final report (about 10 pages) and the oral defense
 (7 min + 3 min Q&A). Last updated 2026-10-21 (after the LightGBM
-diagnosis and tuning v2).
+diagnosis and tuning v2, and the logistic regression tuning v2: v2 now
+complete for the three models).
 
 Every number comes from the EDA notebook (`notebooks/01_eda.ipynb`) or from the
 scripts in `tuning/` (5-fold CV on the development set, test set untouched;
@@ -549,9 +550,8 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   depend on the solver's shuffle (the script fixes `random_state=42`), so they
   are not a stable feature selection. Married x hours combines two proxies for
   sex (F30): re-check the fairness gap if it is adopted.
-- **Next:** proposed v2 space, not run: C 0.01-100 (log), L2 fixed,
-  class_weight None fixed (notebook 02, section 6). Needs the team's agreement
-  to edit `suggest_params()` in `tuning/tune.py`. Expected: about 0.708, as v1.
+- **Next:** done on 2026-10-21: tuning v2 with the space C 0.01-100 (log), L2
+  fixed, class_weight None fixed (F40).
 - **Course link:** S2 logistic regression, L1 / L2 / Elastic Net; S5
   bias/variance, validation curves, grid / random / TPE search; S6 class
   weights; S7 Brier score.
@@ -629,6 +629,29 @@ Each finding lists where it can be used: **R** = report section, **S** = slide.
   CV optimism; S6-S7 class weights cost calibration.
 - **Use in:** R tuning (LightGBM, the candidate final model). S tuning slide.
 
+### F40 · Logistic regression tuning v2: identical to v1, as predicted; v2 now complete for the three models
+- **Finding:** the v2 space read from the curves (F37) finds a different C on
+  the same flat plateau and exactly the same scores as v1. With this run, v2
+  exists for all three models, so the project switches to v2
+  (`BEST_PARAMS_VERSION = "v2"` in `src/config.py`). Across the three
+  families, LightGBM v2 ranks best and has the best probabilities; the
+  differences are small next to the fold noise (section 3d).
+- **Evidence:** `python3 -m tuning.tune --version v2 --model lr` (Optuna TPE,
+  seed 42, 25 trials; fixed: L2, no class weights; searched: C 0.01-100, log).
+  Best: C = 6.80 (v1: 5.18) (`tuning/results/v2/best_params.json`, logistic
+  regression entry; the other two entries unchanged). Then
+  `python3 -m tuning.logistic_regression baseline`: train 0.7097, validation
+  0.7083 ± 0.013, gap 0.0014, ROC-AUC 0.8887, Brier 0.1113, identical to v1 to
+  4 decimals. 18 of 25 trials at 0.7083, 21 of 25 at 0.7080 or more; lowest
+  0.7019 (a small C).
+- **Caveat:** best trial picked on the same folds (S5), negligible on a flat
+  curve. The married x hours interaction (F37) is not part of v2.
+- **Next:** re-run calibration (`python3 -m src.evaluate calibration`) and the
+  fairness audit (`python3 -m src.fairness audit`) on v2: sections 3c and
+  F22-F27 still describe v1.
+- **Course link:** S2 regularization; S5 validation curves and TPE search.
+- **Use in:** R tuning (logistic regression) and model choice. S tuning slide.
+
 ### F18 · Operating point: the cutoff trades wrong flags against misses
 - **Finding:** a stricter cutoff flags fewer people and is right more often,
   but finds fewer of the high earners. With no single costly error in this case,
@@ -683,13 +706,38 @@ Reference (defaults, engineered features, section 3): PR-AUC 0.708 / 0.711 /
 
 ---
 
+## 3d. Tuned results v2 (search spaces built from the validation curves)
+
+Same protocol as 3b (Optuna TPE, seed 42, 25 trials, mean 5-fold PR-AUC), with
+each model's search space read from its validation curves (F36, F39, F40).
+Scores from each model's diagnosis script (`python3 -m tuning.<model>
+baseline`), same 5 folds, train vs validation. Best parameters in
+`tuning/results/v2/best_params.json`, used by `src/evaluate.py` and
+`src/fairness.py` from 2026-10-21 (`BEST_PARAMS_VERSION = "v2"`).
+
+| Model | Train PR-AUC | Val PR-AUC | Gap | Val ROC-AUC | Val Brier | Best parameters |
+|---|---|---|---|---|---|---|
+| Logistic Regression | 0.7097 | 0.7083 ± 0.013 | 0.0014 | 0.8887 | 0.1113 | C = 6.80, L2, no class weights |
+| Random Forest | 0.7536 | 0.7149 ± 0.013 | 0.0386 | 0.8915 | 0.1104 | 300 trees, gini, no class weights, min_samples_leaf 6, max_depth 16, min_samples_split 10, max_samples 0.39, max_features sqrt |
+| LightGBM | 0.7341 | 0.7189 ± 0.013 | 0.0152 | 0.8928 | 0.1096 | 950 trees, learning_rate 0.014, num_leaves 12, max_depth 10, min_child_samples 46, subsample 0.80, colsample 0.43, reg_alpha 1.56, reg_lambda 0.74, scale_pos_weight 1 |
+
+Changes vs v1 (3b): ranking unchanged for all three (LR 0.7083 = 0.7083, RF
+0.715 = 0.715, LightGBM 0.7189 vs 0.7190); Brier better for the random forest
+(0.136 -> 0.110) and LightGBM (0.1112 -> 0.1096), the same for LR. No model
+uses class weights in v2. Order unchanged: LR < RF < LightGBM, with LightGBM
++0.004 over the random forest and +0.011 over LR (fold std about 0.013;
+no paired test between families yet).
+
+---
+
 ## 3c. Calibration of the tuned models (development set, out-of-fold)
 
 Predictions are out-of-fold (5 folds, best parameters of section 3b).
 Calibrated rows come from a second 5-fold CV on those predictions. ECE uses 10
 equal-frequency bins. "Top bin" = the 10% of people with the highest predicted
 probability. Run: `python -m src.evaluate calibration`. **PROVISIONAL**
-(tuned on the same folds; test-set check pending).
+(tuned on the same folds; test-set check pending). **Computed on v1** (section
+3b): to re-run on v2 (section 3d).
 
 All people:
 
